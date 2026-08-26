@@ -7,6 +7,8 @@ import DefaultPlanTemplateModal from './components/DefaultPlanTemplateModal';
 import DetailedReport from './components/DetailedReport';
 import DialogModal from './components/DialogModal';
 import CopyWeekModal from './components/CopyWeekModal';
+import ChangeWeekDateModal from './components/ChangeWeekDateModal';
+import { Calendar } from 'lucide-react';
 import { 
   getWeeks, 
   createNewWeek, 
@@ -28,6 +30,7 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [defaultPlanModalOpen, setDefaultPlanModalOpen] = useState(false);
   const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
+  const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null });
 
@@ -169,6 +172,14 @@ function App() {
     input.click();
   };
 
+  
+  const handleChangeWeekDate = async (weekId, chosenDateStr) => {
+    const { updateWeekDate } = await import('./utils/storage');
+    const updatedWeeks = await updateWeekDate(weekId, chosenDateStr);
+    setWeeks(updatedWeeks);
+    alert("✓ Hafta tarihi başarıyla güncellendi!");
+  };
+
   const handleExecuteCopyWeek = async (sourceWeekId, targetId) => {
     let finalTargetId = targetId;
     if (targetId === 'new') {
@@ -263,7 +274,30 @@ function App() {
           <div className="header-top">
             <div>
               <h1>Haftalık Planım</h1>
-              <p className="subtitle">{currentWeekName}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <p className="subtitle" style={{ margin: 0 }}>{currentWeekName}</p>
+                <button
+                  type="button"
+                  className="icon-btn-date"
+                  onClick={() => setChangeDateModalOpen(true)}
+                  title="Takvimden Tarih Seçip Güncelle"
+                  style={{
+                    background: 'rgba(0,0,0,0.05)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    padding: '2px 6px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    color: 'var(--primary)'
+                  }}
+                >
+                  <Calendar size={14} /> Tarih Değiştir
+                </button>
+              </div>
             </div>
             <div className="header-actions">
               <button 
@@ -330,6 +364,13 @@ function App() {
         isOpen={defaultPlanModalOpen}
         onClose={() => setDefaultPlanModalOpen(false)}
         onApplyToCurrentWeek={handleApplyTemplateToWeek}
+      />
+
+      <ChangeWeekDateModal
+        isOpen={changeDateModalOpen}
+        currentWeek={currentWeekObj}
+        onClose={() => setChangeDateModalOpen(false)}
+        onChangeDate={handleChangeWeekDate}
       />
 
       <CopyWeekModal

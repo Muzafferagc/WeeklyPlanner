@@ -51,8 +51,24 @@ export const resetDefaultScheduleTemplateToFactory = async () => {
   return JSON.parse(JSON.stringify(initialSchedule));
 };
 
+// Deduplicate helper by unique ID
+const deduplicateWeeks = (weeksArr) => {
+  if (!Array.isArray(weeksArr)) return [];
+  const unique = [];
+  const seenIds = new Set();
+  for (const w of weeksArr) {
+    if (w && w.id && !seenIds.has(w.id)) {
+      seenIds.add(w.id);
+      unique.push(w);
+    }
+  }
+  return unique;
+};
+
 export const getWeeks = async () => {
   let weeks = await localforage.getItem('weeks');
+  weeks = deduplicateWeeks(weeks);
+
   if (!weeks || weeks.length === 0) {
     const oldSaved = localStorage.getItem('weeklySchedule');
     let baseSchedule = await getDefaultScheduleTemplate();
@@ -94,8 +110,9 @@ export const createNewWeek = async () => {
     startDate: nextMonday.toISOString(),
     createdAt: new Date().toISOString()
   };
-  weeks.push(newWeek);
-  await localforage.setItem('weeks', weeks);
+  
+  const cleanWeeks = deduplicateWeeks([...weeks, newWeek]);
+  await localforage.setItem('weeks', cleanWeeks);
   
   const newSchedule = await getDefaultScheduleTemplate();
   
@@ -168,7 +185,7 @@ export const deleteWeek = async (weekId) => {
 export const renameWeek = async (weekId, newName) => {
   let weeks = await getWeeks();
   weeks = weeks.map(w => w.id === weekId ? { ...w, name: newName } : w);
-  await localforage.setItem('weeks', weeks);
+  await localforage.setItem('weeks', deduplicateWeeks(weeks));
   return weeks;
 };
 
@@ -177,6 +194,8 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
   if (weekIds && weekIds.length > 0) {
     weeks = weeks.filter(w => weekIds.includes(w.id));
   }
+  weeks = deduplicateWeeks(weeks);
+
   const data = {
     exportedAt: new Date().toISOString(),
     activeWeekId: activeWeekId || (weeks[0] ? weeks[0].id : null),
@@ -184,6 +203,7 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
     schedules: {},
     customDefaultSchedule: await localforage.getItem('customDefaultSchedule')
   };
+
   for (let w of weeks) {
     const s = await localforage.getItem(`schedule_${w.id}`);
     data.schedules[w.id] = s;
@@ -195,22 +215,47 @@ export const importData = async (jsonData) => {
   try {
     const data = JSON.parse(jsonData);
     if (!data.weeks || !data.schedules) return false;
-    
+
+    const cleanWeeks = deduplicateWeeks(data.weeks);
+
+    // Completely clear existing localforage items to prevent any duplication
     await localforage.clear();
-    await localforage.setItem('weeks', data.weeks);
+    await localforage.setItem('weeks', cleanWeeks);
+
     if (data.customDefaultSchedule) {
       await localforage.setItem('customDefaultSchedule', data.customDefaultSchedule);
     }
+
     for (const weekId of Object.keys(data.schedules)) {
-      await localforage.setItem(`schedule_${weekId}`, data.schedules[weekId]);
+      if (data.schedules[weekId]) {
+        await localforage.setItem(`schedule_${weekId}`, data.schedules[weekId]);
+      }
     }
 
-    const restoredActiveWeekId = data.activeWeekId || (data.weeks[0] ? data.weeks[0].id : null);
+    const restoredActiveWeekId = data.activeWeekId || (cleanWeeks[0] ? cleanWeeks[0].id : null);
     if (restoredActiveWeekId) {
       localStorage.setItem('savedActiveWeekId', restoredActiveWeekId);
     }
+
     return { success: true, activeWeekId: restoredActiveWeekId };
   } catch(e) {
     return false;
   }
+};
+
+
+export const updateWeekDate = async (weekId, chosenDateStr) => {
+  let weeks = await getWeeks();
+  const chosenDate = new Date(chosenDateStr);
+  const mondayDate = getMonday(chosenDate);
+  const newName = formatWeekString(mondayDate);
+
+  weeks = weeks.map(w => w.id === weekId ? {
+    ...w,
+    name: newName,
+    startDate: mondayDate.toISOString()
+  } : w);
+
+  await localforage.setItem('weeks', weeks);
+  return weeks;
 };
