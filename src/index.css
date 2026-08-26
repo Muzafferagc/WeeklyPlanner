@@ -911,3 +911,28 @@ body {
 [data-theme="dark"] .time-slot.color-teal { background-color: #042f2e !important; border-color: #14b8a6 !important; }
 [data-theme="dark"] .time-slot.color-lime { background-color: #1a2e05 !important; border-color: #84cc16 !important; }
 [data-theme="dark"] .time-slot.color-brown { background-color: #451a03 !important; border-color: #92400e !important; }
+
+
+/* COPY WEEK MODAL STYLES */
+.copy-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}

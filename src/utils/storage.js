@@ -141,6 +141,20 @@ export const saveScheduleForWeek = async (weekId, schedule) => {
   await localforage.setItem(`schedule_${weekId}`, schedule);
 };
 
+export const copyWeekSchedule = async (sourceWeekId, targetWeekId) => {
+  const sourceSchedule = await getScheduleForWeek(sourceWeekId);
+  const targetSchedule = JSON.parse(JSON.stringify(sourceSchedule));
+
+  for (let day in targetSchedule) {
+    targetSchedule[day] = targetSchedule[day].map(s => ({
+      ...s,
+      id: generateId()
+    }));
+  }
+  await saveScheduleForWeek(targetWeekId, targetSchedule);
+  return targetSchedule;
+};
+
 export const deleteWeek = async (weekId) => {
   let weeks = await getWeeks();
   if (weeks.length <= 1) return false;
@@ -158,12 +172,18 @@ export const renameWeek = async (weekId, newName) => {
   return weeks;
 };
 
-export const exportData = async (weekIds = null) => {
+export const exportData = async (weekIds = null, activeWeekId = null) => {
   let weeks = await getWeeks();
   if (weekIds && weekIds.length > 0) {
     weeks = weeks.filter(w => weekIds.includes(w.id));
   }
-  const data = { weeks, schedules: {}, customDefaultSchedule: await localforage.getItem('customDefaultSchedule') };
+  const data = {
+    exportedAt: new Date().toISOString(),
+    activeWeekId: activeWeekId || (weeks[0] ? weeks[0].id : null),
+    weeks,
+    schedules: {},
+    customDefaultSchedule: await localforage.getItem('customDefaultSchedule')
+  };
   for (let w of weeks) {
     const s = await localforage.getItem(`schedule_${w.id}`);
     data.schedules[w.id] = s;
@@ -184,7 +204,12 @@ export const importData = async (jsonData) => {
     for (const weekId of Object.keys(data.schedules)) {
       await localforage.setItem(`schedule_${weekId}`, data.schedules[weekId]);
     }
-    return true;
+
+    const restoredActiveWeekId = data.activeWeekId || (data.weeks[0] ? data.weeks[0].id : null);
+    if (restoredActiveWeekId) {
+      localStorage.setItem('savedActiveWeekId', restoredActiveWeekId);
+    }
+    return { success: true, activeWeekId: restoredActiveWeekId };
   } catch(e) {
     return false;
   }

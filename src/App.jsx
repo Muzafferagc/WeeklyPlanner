@@ -1,43 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Download, Upload, Sun, Moon, RotateCcw, FileText, Settings } from 'lucide-react';
-import confetti from 'canvas-confetti';
-import Sidebar from './components/Sidebar';
+import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
+import Sidebar from './components/Sidebar';
+import SlotDetailModal from './components/SlotDetailModal';
+import DefaultPlanTemplateModal from './components/DefaultPlanTemplateModal';
 import DetailedReport from './components/DetailedReport';
 import DialogModal from './components/DialogModal';
-import DefaultPlanTemplateModal from './components/DefaultPlanTemplateModal';
+import CopyWeekModal from './components/CopyWeekModal';
 import { 
   getWeeks, 
   createNewWeek, 
   deleteWeek, 
   renameWeek, 
-  getScheduleForWeek,
   saveScheduleForWeek,
-  exportData, 
+  getDefaultScheduleTemplate,
+  exportData,
   importData,
-  getDefaultScheduleTemplate
+  getScheduleForWeek,
+  copyWeekSchedule
 } from './utils/storage';
+import confetti from 'canvas-confetti';
 
 function App() {
   const [weeks, setWeeks] = useState([]);
   const [currentWeekId, setCurrentWeekId] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
   const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [defaultPlanModalOpen, setDefaultPlanModalOpen] = useState(false);
+  const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null });
-  const [defaultPlanModalOpen, setDefaultPlanModalOpen] = useState(false);
 
   useEffect(() => {
-    loadWeeks();
+    loadApp();
   }, []);
 
   useEffect(() => {
     if (isDarkMode) {
-      document.body.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
     } else {
-      document.body.removeAttribute('data-theme');
-      localStorage.setItem('theme', 'light');
+      document.documentElement.removeAttribute('data-theme');
     }
   }, [isDarkMode]);
 
@@ -47,11 +49,15 @@ function App() {
     }
   }, [currentWeekId]);
 
-  const loadWeeks = async () => {
-    setLoading(true);
+  const loadApp = async () => {
     const loadedWeeks = await getWeeks();
     setWeeks(loadedWeeks);
-    if (!currentWeekId && loadedWeeks.length > 0) {
+    
+    // Date Backup Restore: Check if backup restored a saved active week date
+    const savedActiveWeekId = localStorage.getItem('savedActiveWeekId');
+    if (savedActiveWeekId && loadedWeeks.some(w => w.id === savedActiveWeekId)) {
+      setCurrentWeekId(savedActiveWeekId);
+    } else if (loadedWeeks.length > 0) {
       setCurrentWeekId(loadedWeeks[0].id);
     }
     setLoading(false);
@@ -59,7 +65,8 @@ function App() {
 
   const handleCreateWeek = async () => {
     const newWeek = await createNewWeek();
-    setWeeks(await getWeeks());
+    const updatedWeeks = await getWeeks();
+    setWeeks(updatedWeeks);
     setCurrentWeekId(newWeek.id);
   };
 
@@ -130,7 +137,7 @@ function App() {
   };
 
   const handleExport = async (weekIds = null) => {
-    const jsonStr = await exportData(weekIds);
+    const jsonStr = await exportData(weekIds, currentWeekId);
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -149,9 +156,9 @@ function App() {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const success = await importData(event.target.result);
-        if (success) {
-          alert("Yedek başarıyla yüklendi!");
+        const res = await importData(event.target.result);
+        if (res && res.success) {
+          alert("✓ Yedek ve tarih bilgisi başarıyla yüklendi!");
           window.location.reload();
         } else {
           alert("Dosya bozuk veya desteklenmeyen formatta.");
@@ -160,6 +167,28 @@ function App() {
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const handleExecuteCopyWeek = async (sourceWeekId, targetId) => {
+    let finalTargetId = targetId;
+    if (targetId === 'new') {
+      const newWeek = await createNewWeek();
+      finalTargetId = newWeek.id;
+    }
+    
+    await copyWeekSchedule(sourceWeekId, finalTargetId);
+    const updatedWeeks = await getWeeks();
+    setWeeks(updatedWeeks);
+    setCurrentWeekId(finalTargetId);
+
+    confetti({
+      particleCount: 120,
+      spread: 90,
+      origin: { y: 0.6 }
+    });
+
+    const targetWeekObj = updatedWeeks.find(w => w.id === finalTargetId);
+    alert(`✓ Plan başarıyla ${targetWeekObj ? targetWeekObj.name : ''} tarihine kopyalandı!`);
   };
 
   const updateProgress = async (weekId) => {
@@ -212,7 +241,8 @@ function App() {
     return <div className="loading-screen">Yükleniyor...</div>;
   }
 
-  const currentWeekName = weeks.find(w => w.id === currentWeekId)?.name;
+  const currentWeekObj = weeks.find(w => w.id === currentWeekId);
+  const currentWeekName = currentWeekObj?.name;
   const progressPercent = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
 
   return (
@@ -238,8 +268,17 @@ function App() {
             <div className="header-actions">
               <button 
                 className="print-btn default-plan-btn"
+                onClick={() => setCopyWeekModalOpen(true)}
+                title="Mevcut haftanın planını başka haftaya kopyala"
+              >
+                <Copy size={18} />
+                <span className="btn-text-responsive">Haftayı Kopyala</span>
+              </button>
+
+              <button 
+                className="print-btn default-plan-btn"
                 onClick={() => setDefaultPlanModalOpen(true)}
-                title="Varsayılan Plan Şablonunu (%90 Ekran) Düzenle"
+                title="Varsayılan Plan Şablonunu Düzenle"
               >
                 <Settings size={18} />
                 <span className="btn-text-responsive">Varsayılan Plan</span>
@@ -248,10 +287,10 @@ function App() {
               <button className="print-btn" onClick={() => setIsDarkMode(!isDarkMode)} title="Gece/Gündüz Modu">
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
-              <button className="print-btn" onClick={() => handleExport(null)} title="Tüm Verileri Yedekle">
+              <button className="print-btn" onClick={() => handleExport(null)} title="Tüm Verileri (ve Aktif Tarihi) Yedekle">
                 <Download size={18} />
               </button>
-              <button className="print-btn" onClick={handleImport} title="Yedeği Yükle">
+              <button className="print-btn" onClick={handleImport} title="Yedeği (Tarih Bilgisiyle) Yükle">
                 <Upload size={18} />
               </button>
               <button className="print-btn reset-btn" onClick={requestReset} title="Varsayılana Sıfırla">
@@ -291,6 +330,14 @@ function App() {
         isOpen={defaultPlanModalOpen}
         onClose={() => setDefaultPlanModalOpen(false)}
         onApplyToCurrentWeek={handleApplyTemplateToWeek}
+      />
+
+      <CopyWeekModal
+        isOpen={copyWeekModalOpen}
+        sourceWeek={currentWeekObj}
+        weeks={weeks}
+        onClose={() => setCopyWeekModalOpen(false)}
+        onCopyWeek={handleExecuteCopyWeek}
       />
 
       {currentWeekId && (
