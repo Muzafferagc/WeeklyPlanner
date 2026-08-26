@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy } from 'lucide-react';
+import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
+import CourseDetailsView from './components/CourseDetailsView';
 import Sidebar from './components/Sidebar';
 import SlotDetailModal from './components/SlotDetailModal';
 import DefaultPlanTemplateModal from './components/DefaultPlanTemplateModal';
@@ -24,6 +25,7 @@ import {
 import confetti from 'canvas-confetti';
 
 function App() {
+  const [activeTab, setActiveTab] = useState('schedule'); // 'schedule' | 'details'
   const [weeks, setWeeks] = useState([]);
   const [currentWeekId, setCurrentWeekId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,7 @@ function App() {
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null });
+
 
   useEffect(() => {
     loadApp();
@@ -268,55 +271,66 @@ function App() {
         onMultiDeleteWeeks={handleMultiDeleteWeeks}
         onMultiExportWeeks={handleExport}
         onOpenDefaultPlanModal={() => setDefaultPlanModalOpen(true)}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
       <div className="app-container">
         <header className="header no-print">
           <div className="header-top">
             <div>
-              <h1>Haftalık Planım</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <p className="subtitle" style={{ margin: 0 }}>{currentWeekName}</p>
-                <button
-                  type="button"
-                  className="icon-btn-date"
-                  onClick={() => setChangeDateModalOpen(true)}
-                  title="Takvimden Tarih Seçip Güncelle"
-                  style={{
-                    background: 'rgba(0,0,0,0.05)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '2px 6px',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    color: 'var(--primary)'
-                  }}
-                >
-                  <Calendar size={14} /> Tarih Değiştir
-                </button>
-              </div>
+              <h1>{activeTab === 'details' ? 'Ders & Müfredat Yol Haritası' : 'Haftalık Planım'}</h1>
+              {activeTab === 'schedule' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <p className="subtitle" style={{ margin: 0 }}>{currentWeekName}</p>
+                  <button
+                    type="button"
+                    className="icon-btn-date"
+                    onClick={() => setChangeDateModalOpen(true)}
+                    title="Takvimden Tarih Seçip Güncelle"
+                    style={{
+                      background: 'rgba(0,0,0,0.05)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      padding: '2px 6px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      color: 'var(--primary)'
+                    }}
+                  >
+                    <Calendar size={14} /> Tarih Değiştir
+                  </button>
+                </div>
+              )}
+              {activeTab === 'details' && (
+                <p className="subtitle" style={{ margin: 0 }}>Konular, Çalışma Notları ve Yol Haritaları</p>
+              )}
             </div>
             <div className="header-actions">
-              <button 
-                className="print-btn default-plan-btn"
-                onClick={() => setCopyWeekModalOpen(true)}
-                title="Mevcut haftanın planını başka haftaya kopyala"
-              >
-                <Copy size={18} />
-                <span className="btn-text-responsive">Haftayı Kopyala</span>
-              </button>
+              {activeTab === 'schedule' && (
+                <>
+                  <button 
+                    className="print-btn default-plan-btn"
+                    onClick={() => setCopyWeekModalOpen(true)}
+                    title="Mevcut haftanın planını başka haftaya kopyala"
+                  >
+                    <Copy size={18} />
+                    <span className="btn-text-responsive">Haftayı Kopyala</span>
+                  </button>
 
-              <button 
-                className="print-btn default-plan-btn"
-                onClick={() => setDefaultPlanModalOpen(true)}
-                title="Varsayılan Plan Şablonunu Düzenle"
-              >
-                <Settings size={18} />
-                <span className="btn-text-responsive">Varsayılan Plan</span>
-              </button>
+                  <button 
+                    className="print-btn default-plan-btn"
+                    onClick={() => setDefaultPlanModalOpen(true)}
+                    title="Varsayılan Plan Şablonunu Düzenle"
+                  >
+                    <Settings size={18} />
+                    <span className="btn-text-responsive">Varsayılan Plan</span>
+                  </button>
+                </>
+              )}
 
               <button className="print-btn" onClick={() => setIsDarkMode(!isDarkMode)} title="Gece/Gündüz Modu">
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -327,27 +341,40 @@ function App() {
               <button className="print-btn" onClick={handleImport} title="Yedeği (Tarih Bilgisiyle) Yükle">
                 <Upload size={18} />
               </button>
-              <button className="print-btn reset-btn" onClick={requestReset} title="Varsayılana Sıfırla">
-                <RotateCcw size={18} />
-              </button>
-              <button className="print-btn" onClick={handleDetailedPrint} title="Notlar ve görevlerle birlikte detaylı rapor yazdır">
-                <FileText size={18} />
-                Detaylı Rapor
-              </button>
-              <button className="print-btn" onClick={handlePrint} title="Sadece haftalık tabloyu yazdır">
-                <Printer size={18} />
-                Poster Yazdır
-              </button>
+              {activeTab === 'schedule' && (
+                <>
+                  <button className="print-btn reset-btn" onClick={requestReset} title="Varsayılana Sıfırla">
+                    <RotateCcw size={18} />
+                  </button>
+                  <button className="print-btn" onClick={handleDetailedPrint} title="Notlar ve görevlerle birlikte detaylı rapor yazdır">
+                    <FileText size={18} />
+                    Detaylı Rapor
+                  </button>
+                  <button className="print-btn" onClick={handlePrint} title="Sadece haftalık tabloyu yazdır">
+                    <Printer size={18} />
+                    Poster Yazdır
+                  </button>
+                </>
+              )}
             </div>
           </div>
           
-          <div className="progress-container" title={`Haftalık Görevler: ${progress.completed}/${progress.total}`}>
-            <div className="progress-bar" style={{ width: `${progressPercent}%` }}></div>
-          </div>
-          <div className="progress-text">Haftalık Görev İlerlemesi: %{progressPercent}</div>
+          {activeTab === 'schedule' && (
+            <>
+              <div className="progress-container" title={`Haftalık Görevler: ${progress.completed}/${progress.total}`}>
+                <div className="progress-bar" style={{ width: `${progressPercent}%` }}></div>
+              </div>
+              <div className="progress-text">Haftalık Görev İlerlemesi: %{progressPercent}</div>
+            </>
+          )}
         </header>
         <main>
-          {currentWeekId && <WeeklySchedule key={currentWeekId} weekId={currentWeekId} onScheduleChange={() => updateProgress(currentWeekId)} />}
+          {activeTab === 'schedule' && currentWeekId && (
+            <WeeklySchedule key={currentWeekId} weekId={currentWeekId} onScheduleChange={() => updateProgress(currentWeekId)} />
+          )}
+          {activeTab === 'details' && (
+            <CourseDetailsView weeks={weeks} currentWeekId={currentWeekId} />
+          )}
         </main>
       </div>
 

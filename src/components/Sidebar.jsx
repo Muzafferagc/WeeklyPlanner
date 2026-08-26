@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CalendarDays, Trash2, Edit3, Download, Settings, Search, Filter } from 'lucide-react';
+import { Plus, CalendarDays, Trash2, Edit3, Download, Settings, Search, Filter, BookOpen } from 'lucide-react';
 import DialogModal from './DialogModal';
 
 const MONTH_NAMES = [
@@ -16,7 +16,9 @@ const Sidebar = ({
   onRenameWeek, 
   onMultiDeleteWeeks, 
   onMultiExportWeeks, 
-  onOpenDefaultPlanModal 
+  onOpenDefaultPlanModal,
+  activeTab = 'schedule',
+  onTabChange
 }) => {
   const [selectedWeeks, setSelectedWeeks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,12 +26,12 @@ const Sidebar = ({
   const [selectedMonth, setSelectedMonth] = useState('ALL');
   const [dialog, setDialog] = useState({ isOpen: false, type: null, payload: null });
 
-  // Chronological Sort: Top = Newest, Bottom = Oldest (Aşağıdan yukarıya tarih artar)
+  // Chronological Sort: Top = Newest, Bottom = Oldest
   const sortedWeeks = useMemo(() => {
     return [...weeks].sort((a, b) => {
       const dateA = new Date(a.startDate || a.createdAt || 0);
       const dateB = new Date(b.startDate || b.createdAt || 0);
-      return dateB - dateA; // Index 0 (top) = newest, Last index (bottom) = oldest
+      return dateB - dateA;
     });
   }, [weeks]);
 
@@ -69,6 +71,9 @@ const Sidebar = ({
   };
 
   const handleWeekClick = (e, id) => {
+    if (activeTab !== 'schedule' && onTabChange) {
+      onTabChange('schedule');
+    }
     if (e.ctrlKey || e.metaKey) {
       if (selectedWeeks.includes(id)) {
         setSelectedWeeks(selectedWeeks.filter(wId => wId !== id));
@@ -125,8 +130,26 @@ const Sidebar = ({
 
   return (
     <div className="sidebar no-print">
+      {/* MAIN VIEW NAVIGATION TABS */}
+      <div className="sidebar-main-tabs">
+        <button 
+          className={`sidebar-tab-btn ${activeTab === 'schedule' ? 'active' : ''}`}
+          onClick={() => onTabChange && onTabChange('schedule')}
+        >
+          <CalendarDays size={18} />
+          <span>Haftalık Planım</span>
+        </button>
+        <button 
+          className={`sidebar-tab-btn ${activeTab === 'details' ? 'active' : ''}`}
+          onClick={() => onTabChange && onTabChange('details')}
+        >
+          <BookOpen size={18} />
+          <span>Ders Detayları</span>
+        </button>
+      </div>
+
       <div className="sidebar-header">
-        <CalendarDays className="text-primary" size={24} />
+        <CalendarDays className="text-primary" size={20} />
         <h2>Haftalar ({filteredWeeks.length})</h2>
       </div>
 

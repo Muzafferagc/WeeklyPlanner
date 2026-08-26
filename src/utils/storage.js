@@ -189,6 +189,57 @@ export const renameWeek = async (weekId, newName) => {
   return weeks;
 };
 
+export const initialCourseData = [
+  {
+    id: 'c_mlops',
+    title: 'MLOps & Yapay Zeka',
+    color: '#8b5cf6',
+    description: 'Model deployment, CI/CD pipelines, Docker, MLflow ve monitoring müfredatı',
+    topics: []
+  },
+  {
+    id: 'c_java_oop',
+    title: 'Java OOP (Nesne Yönelimli Programlama)',
+    color: '#06b6d4',
+    description: 'Nesne yönelimli tasarım ilkeleri, SOLID, Tasarım Desenleri ve Java Collection Framework',
+    topics: []
+  },
+  {
+    id: 'c_2nd_year',
+    title: '2. Sınıf Dersleri (Müfredat Takibi)',
+    color: '#ec4899',
+    description: 'Veri Yapıları, İşletim Sistemleri, Veri Tabanı Yönetimi ve Algoritma Analizi ders notları',
+    topics: []
+  }
+];
+
+
+export const getCourseDetailsData = async () => {
+  let data = await localforage.getItem('course_details_data');
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    data = JSON.parse(JSON.stringify(initialCourseData));
+    await localforage.setItem('course_details_data', data);
+  } else {
+    // Sanitize data: ensure topics are clean if user wants clean slate
+    data = data.map(course => ({
+      ...course,
+      topics: Array.isArray(course.topics) ? course.topics : []
+    }));
+  }
+  return data;
+};
+
+export const clearCourseDetailsData = async () => {
+  const freshData = JSON.parse(JSON.stringify(initialCourseData));
+  await localforage.setItem('course_details_data', freshData);
+  return freshData;
+};
+
+export const saveCourseDetailsData = async (data) => {
+  await localforage.setItem('course_details_data', data);
+};
+
+
 export const exportData = async (weekIds = null, activeWeekId = null) => {
   let weeks = await getWeeks();
   if (weekIds && weekIds.length > 0) {
@@ -196,12 +247,15 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
   }
   weeks = deduplicateWeeks(weeks);
 
+  const courseDetailsData = await getCourseDetailsData();
+
   const data = {
     exportedAt: new Date().toISOString(),
     activeWeekId: activeWeekId || (weeks[0] ? weeks[0].id : null),
     weeks,
     schedules: {},
-    customDefaultSchedule: await localforage.getItem('customDefaultSchedule')
+    customDefaultSchedule: await localforage.getItem('customDefaultSchedule'),
+    courseDetailsData
   };
 
   for (let w of weeks) {
@@ -224,6 +278,10 @@ export const importData = async (jsonData) => {
 
     if (data.customDefaultSchedule) {
       await localforage.setItem('customDefaultSchedule', data.customDefaultSchedule);
+    }
+
+    if (data.courseDetailsData) {
+      await localforage.setItem('course_details_data', data.courseDetailsData);
     }
 
     for (const weekId of Object.keys(data.schedules)) {
@@ -259,3 +317,4 @@ export const updateWeekDate = async (weekId, chosenDateStr) => {
   await localforage.setItem('weeks', weeks);
   return weeks;
 };
+
