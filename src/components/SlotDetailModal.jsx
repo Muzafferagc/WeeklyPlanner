@@ -84,11 +84,12 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
     { name: 'green', hex: '#22c55e' },
     { name: 'yellow', hex: '#eab308' },
     { name: 'purple', hex: '#a855f7' },
+    { name: 'violet', hex: '#7c3aed' },
     { name: 'orange', hex: '#f97316' },
     { name: 'pink', hex: '#f43f5e' },
-    { name: 'cyan', hex: '#06b6d4' },
-    { name: 'indigo', hex: '#6366f1' },
-    { name: 'mint', hex: '#10b981' }
+    { name: 'teal', hex: '#14b8a6' },
+    { name: 'lime', hex: '#84cc16' },
+    { name: 'brown', hex: '#92400e' }
   ];
 
   return (

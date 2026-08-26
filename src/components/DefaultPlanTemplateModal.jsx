@@ -140,17 +140,18 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
                         className="mini-color-select"
                         title="Renk Değiştir"
                       >
-                        <option value="gray">Gri</option>
+                                                <option value="gray">Gri</option>
                         <option value="red">Kırmızı</option>
                         <option value="blue">Mavi</option>
                         <option value="green">Yeşil</option>
                         <option value="yellow">Sarı</option>
-                        <option value="purple">Mor</option>
+                        <option value="purple">Açık Mor</option>
+                        <option value="violet">Koyu Kraliçe Moru</option>
                         <option value="orange">Turuncu</option>
                         <option value="pink">Pembe</option>
-                        <option value="cyan">Turkuaz</option>
-                        <option value="indigo">İndigo</option>
-                        <option value="mint">Nane Yeşili</option>
+                        <option value="teal">Deniz Mavisi (Teal)</option>
+                        <option value="lime">Limon Yeşili</option>
+                        <option value="brown">Kahverengi</option>
                       </select>
 
                       <button 

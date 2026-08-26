@@ -871,21 +871,43 @@ body {
 }
 
 
-/* NEW PASTEL CARD COLOR VARIANTS */
-.time-slot.color-orange { background-color: #ffedd5 !important; border-color: #fb923c !important; }
-.time-slot.color-pink { background-color: #ffe4e6 !important; border-color: #fb7185 !important; }
-.time-slot.color-cyan { background-color: #cff4fc !important; border-color: #22d3ee !important; }
-.time-slot.color-indigo { background-color: #e0e7ff !important; border-color: #818cf8 !important; }
-.time-slot.color-mint { background-color: #d1fae5 !important; border-color: #34d399 !important; }
 
+/* BOLD DISTINCT CARD COLOR VARIANTS */
+.time-slot.color-gray { background-color: #f3f4f6 !important; border-color: #9ca3af !important; }
+.time-slot.color-red { background-color: #fee2e2 !important; border-color: #ef4444 !important; }
+.time-slot.color-blue { background-color: #dbeafe !important; border-color: #3b82f6 !important; }
+.time-slot.color-green { background-color: #dcfce7 !important; border-color: #22c55e !important; }
+.time-slot.color-yellow { background-color: #fef9c3 !important; border-color: #eab308 !important; }
+.time-slot.color-purple { background-color: #f3e8ff !important; border-color: #c084fc !important; }
+.time-slot.color-violet { background-color: #ede9fe !important; border-color: #7c3aed !important; }
+.time-slot.color-orange { background-color: #ffedd5 !important; border-color: #f97316 !important; }
+.time-slot.color-pink { background-color: #ffe4e6 !important; border-color: #f43f5e !important; }
+.time-slot.color-teal { background-color: #ccfbf1 !important; border-color: #14b8a6 !important; }
+.time-slot.color-lime { background-color: #ecfccb !important; border-color: #84cc16 !important; }
+.time-slot.color-brown { background-color: #fef3c7 !important; border-color: #92400e !important; }
+
+.color-option.color-gray { background-color: #6b7280 !important; }
+.color-option.color-red { background-color: #ef4444 !important; }
+.color-option.color-blue { background-color: #3b82f6 !important; }
+.color-option.color-green { background-color: #22c55e !important; }
+.color-option.color-yellow { background-color: #eab308 !important; }
+.color-option.color-purple { background-color: #a855f7 !important; }
+.color-option.color-violet { background-color: #7c3aed !important; }
 .color-option.color-orange { background-color: #f97316 !important; }
 .color-option.color-pink { background-color: #f43f5e !important; }
-.color-option.color-cyan { background-color: #06b6d4 !important; }
-.color-option.color-indigo { background-color: #6366f1 !important; }
-.color-option.color-mint { background-color: #10b981 !important; }
+.color-option.color-teal { background-color: #14b8a6 !important; }
+.color-option.color-lime { background-color: #84cc16 !important; }
+.color-option.color-brown { background-color: #92400e !important; }
 
+[data-theme="dark"] .time-slot.color-gray { background-color: #374151 !important; border-color: #6b7280 !important; }
+[data-theme="dark"] .time-slot.color-red { background-color: #450a0a !important; border-color: #ef4444 !important; }
+[data-theme="dark"] .time-slot.color-blue { background-color: #172554 !important; border-color: #3b82f6 !important; }
+[data-theme="dark"] .time-slot.color-green { background-color: #052e16 !important; border-color: #22c55e !important; }
+[data-theme="dark"] .time-slot.color-yellow { background-color: #422006 !important; border-color: #eab308 !important; }
+[data-theme="dark"] .time-slot.color-purple { background-color: #3b0764 !important; border-color: #a855f7 !important; }
+[data-theme="dark"] .time-slot.color-violet { background-color: #2e1065 !important; border-color: #7c3aed !important; }
 [data-theme="dark"] .time-slot.color-orange { background-color: #431407 !important; border-color: #f97316 !important; }
 [data-theme="dark"] .time-slot.color-pink { background-color: #4c0519 !important; border-color: #f43f5e !important; }
-[data-theme="dark"] .time-slot.color-cyan { background-color: #083344 !important; border-color: #06b6d4 !important; }
-[data-theme="dark"] .time-slot.color-indigo { background-color: #1e1b4b !important; border-color: #6366f1 !important; }
-[data-theme="dark"] .time-slot.color-mint { background-color: #022c22 !important; border-color: #10b981 !important; }
+[data-theme="dark"] .time-slot.color-teal { background-color: #042f2e !important; border-color: #14b8a6 !important; }
+[data-theme="dark"] .time-slot.color-lime { background-color: #1a2e05 !important; border-color: #84cc16 !important; }
+[data-theme="dark"] .time-slot.color-brown { background-color: #451a03 !important; border-color: #92400e !important; }
