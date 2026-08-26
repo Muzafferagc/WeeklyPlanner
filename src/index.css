@@ -869,3 +869,23 @@ body {
   gap: 0.75rem !important;
   background: rgba(0, 0, 0, 0.04) !important;
 }
+
+
+/* NEW PASTEL CARD COLOR VARIANTS */
+.time-slot.color-orange { background-color: #ffedd5 !important; border-color: #fb923c !important; }
+.time-slot.color-pink { background-color: #ffe4e6 !important; border-color: #fb7185 !important; }
+.time-slot.color-cyan { background-color: #cff4fc !important; border-color: #22d3ee !important; }
+.time-slot.color-indigo { background-color: #e0e7ff !important; border-color: #818cf8 !important; }
+.time-slot.color-mint { background-color: #d1fae5 !important; border-color: #34d399 !important; }
+
+.color-option.color-orange { background-color: #f97316 !important; }
+.color-option.color-pink { background-color: #f43f5e !important; }
+.color-option.color-cyan { background-color: #06b6d4 !important; }
+.color-option.color-indigo { background-color: #6366f1 !important; }
+.color-option.color-mint { background-color: #10b981 !important; }
+
+[data-theme="dark"] .time-slot.color-orange { background-color: #431407 !important; border-color: #f97316 !important; }
+[data-theme="dark"] .time-slot.color-pink { background-color: #4c0519 !important; border-color: #f43f5e !important; }
+[data-theme="dark"] .time-slot.color-cyan { background-color: #083344 !important; border-color: #06b6d4 !important; }
+[data-theme="dark"] .time-slot.color-indigo { background-color: #1e1b4b !important; border-color: #6366f1 !important; }
+[data-theme="dark"] .time-slot.color-mint { background-color: #022c22 !important; border-color: #10b981 !important; }

@@ -146,6 +146,11 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
                         <option value="green">Yeşil</option>
                         <option value="yellow">Sarı</option>
                         <option value="purple">Mor</option>
+                        <option value="orange">Turuncu</option>
+                        <option value="pink">Pembe</option>
+                        <option value="cyan">Turkuaz</option>
+                        <option value="indigo">İndigo</option>
+                        <option value="mint">Nane Yeşili</option>
                       </select>
 
                       <button 

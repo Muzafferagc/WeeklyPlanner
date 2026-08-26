@@ -355,7 +355,7 @@ const WeeklySchedule = ({ weekId, onScheduleChange }) => {
         <div className="multi-action-bar no-print">
           <span className="selection-count">{selectedSlots.length} etkinlik seçildi</span>
           <div className="multi-color-picker" style={{ display: 'flex', gap: '0.25rem', borderRight: '2px solid var(--border-color)', paddingRight: '1rem', marginRight: '0.5rem' }}>
-            {['gray', 'red', 'blue', 'green', 'yellow', 'purple'].map(color => (
+            {['gray', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'indigo', 'mint'].map(color => (
               <div 
                 key={color}
                 className={`color-option color-${color}`}
