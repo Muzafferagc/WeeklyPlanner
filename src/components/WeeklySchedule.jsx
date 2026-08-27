@@ -325,7 +325,7 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
             onClick={() => setActiveMobileDay(day)}
           >
             <span>{day}</span>
-            {schedule[day] && schedule[day].length > 0 && (
+            {Array.isArray(schedule[day]) && schedule[day].length > 0 && (
               <span className="mobile-day-count">{schedule[day].length}</span>
             )}
           </button>
@@ -342,7 +342,7 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
           >
           <div className="day-title">{day}</div>
           
-          {schedule[day].map((slot) => {
+          {(Array.isArray(schedule[day]) ? schedule[day] : []).map((slot) => {
             const isSelected = selectedSlots.find(s => s.id === slot.id);
             return (
             <div 

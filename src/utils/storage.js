@@ -139,7 +139,7 @@ export const createNewWeek = async (mode = 'next', customStartDate = null) => {
 
 export const getScheduleForWeek = async (weekId) => {
   let schedule = await localforage.getItem(`schedule_${weekId}`);
-  if (!schedule) {
+  if (!schedule || typeof schedule !== 'object') {
     schedule = await getDefaultScheduleTemplate();
     for (let day in schedule) {
       schedule[day] = schedule[day].map(s => ({...s, id: generateId()}));
@@ -147,18 +147,29 @@ export const getScheduleForWeek = async (weekId) => {
     await localforage.setItem(`schedule_${weekId}`, schedule);
   }
   
+  const WEEK_DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
   let needsSave = false;
+
+  WEEK_DAYS.forEach(day => {
+    if (!Array.isArray(schedule[day])) {
+      schedule[day] = [];
+      needsSave = true;
+    }
+  });
+
   for (const day in schedule) {
-    schedule[day] = schedule[day].map(slot => {
-      let updatedSlot = { ...slot };
-      if (!updatedSlot.id) { updatedSlot.id = generateId(); needsSave = true; }
-      if (updatedSlot.notes === undefined) { updatedSlot.notes = ""; needsSave = true; }
-      if (!updatedSlot.checklist) { updatedSlot.checklist = []; needsSave = true; }
-      if (!updatedSlot.links) { updatedSlot.links = []; needsSave = true; }
-      if (!updatedSlot.images) { updatedSlot.images = []; needsSave = true; }
-      if (!updatedSlot.color) { updatedSlot.color = "gray"; needsSave = true; }
-      return updatedSlot;
-    });
+    if (Array.isArray(schedule[day])) {
+      schedule[day] = schedule[day].map(slot => {
+        let updatedSlot = { ...slot };
+        if (!updatedSlot.id) { updatedSlot.id = generateId(); needsSave = true; }
+        if (updatedSlot.notes === undefined) { updatedSlot.notes = ""; needsSave = true; }
+        if (!updatedSlot.checklist) { updatedSlot.checklist = []; needsSave = true; }
+        if (!updatedSlot.links) { updatedSlot.links = []; needsSave = true; }
+        if (!updatedSlot.images) { updatedSlot.images = []; needsSave = true; }
+        if (!updatedSlot.color) { updatedSlot.color = "gray"; needsSave = true; }
+        return updatedSlot;
+      });
+    }
   }
   
   if (needsSave) {
