@@ -17,20 +17,23 @@ const DialogModal = ({
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (type === 'prompt') {
-      onConfirm(inputValue);
+      if (onConfirm) onConfirm(inputValue);
     } else {
-      onConfirm();
+      if (onConfirm) onConfirm();
     }
   };
 
   return (
-    <div className="modal-overlay mobile-high-overlay" style={{ zIndex: 60000 }}>
-      <div className="dialog-content">
+    <div className="modal-overlay mobile-high-overlay" style={{ zIndex: 60000 }} onClick={onCancel}>
+      <div className="dialog-content" onClick={e => e.stopPropagation()}>
         <div className="dialog-header">
           <h3>{title}</h3>
-          <button className="close-btn" onClick={onCancel}><X size={20} /></button>
+          <button className="close-btn" type="button" onClick={onCancel}><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="dialog-body">
           <p>{message}</p>
@@ -46,7 +49,11 @@ const DialogModal = ({
           )}
           <div className="dialog-footer">
             <button type="button" className="btn-secondary" onClick={onCancel}>{cancelText}</button>
-            <button type="submit" className={`btn-primary ${title.includes('Sil') || title.includes('Sıfırla') ? 'danger-bg' : ''}`}>
+            <button 
+              type="button" 
+              className={`btn-primary ${title && (title.includes('Sil') || title.includes('Sıfırla')) ? 'danger-bg' : ''}`}
+              onClick={handleSubmit}
+            >
               {confirmText}
             </button>
           </div>

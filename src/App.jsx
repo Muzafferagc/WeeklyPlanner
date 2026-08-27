@@ -230,6 +230,7 @@ function App() {
 
   const handleConfirmReset = async () => {
     if (currentWeekId) {
+      setConfirmDialog({ isOpen: false, type: null });
       const defaultTemplate = await getDefaultScheduleTemplate();
       const freshSchedule = JSON.parse(JSON.stringify(defaultTemplate));
       for (let day in freshSchedule) {
@@ -238,14 +239,15 @@ function App() {
         }
       }
       await saveScheduleForWeek(currentWeekId, freshSchedule);
-      setConfirmDialog({ isOpen: false, type: null });
       setSyncRefreshKey(prev => prev + 1);
       await broadcastCurrentState();
-      confetti({
-        particleCount: 60,
-        spread: 50,
-        origin: { y: 0.7 }
-      });
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.7 }
+        });
+      } catch (e) {}
     }
   };
 
