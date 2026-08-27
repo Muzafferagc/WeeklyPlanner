@@ -3589,17 +3589,27 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     flex: 1;
+    min-width: 0;
     height: 100%;
     background: transparent;
     border: none;
     color: #64748b;
     font-family: inherit;
-    font-size: 0.75rem;
+    font-size: 0.70rem !important;
     font-weight: 700;
     cursor: pointer;
+    padding: 0 1px !important;
     transition: all 0.15s ease;
+  }
+
+  .mobile-nav-btn span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    font-size: 0.70rem !important;
   }
 
   .mobile-nav-btn.active {
