@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   CheckCircle2, Circle, Star, Calendar, Sun, Plus, Trash2, Edit3, 
   MoreHorizontal, ListFilter, ArrowUpDown, Share2, LayoutList, Table,
-  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat
+  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat, Folder
 } from 'lucide-react';
 import { 
   addCustomTask, 
@@ -12,6 +12,9 @@ import {
   toggleTaskComplete,
   deleteCustomList,
   renameCustomList,
+  bulkDeleteCustomTasks,
+  bulkMoveCustomTasksToList,
+  bulkToggleMyDay,
   DAY_KEYS,
   isTaskActiveOnDate,
   getRecurrenceLabel
@@ -20,8 +23,8 @@ import DialogModal from './DialogModal';
 
 const TaskListView = ({ 
   currentList, 
-  tasks, 
-  customLists, 
+  tasks = [], 
+  customLists = [], 
   onRefreshData,
   onNavigateToList
 }) => {
@@ -36,29 +39,37 @@ const TaskListView = ({
   const [showRepeatPopover, setShowRepeatPopover] = useState(false);
 
   const [selectedTask, setSelectedTask] = useState(null);
-  const [dialog, setDialog] = useState({ isOpen: false, type: null });
+  const [dialog, setDialog] = useState({ isOpen: false, type: null, payload: null });
   const [showCompleted, setShowCompleted] = useState(true);
+
+  // Multi-Select & Long-Press State
+  const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const pressTimerRef = useRef(null);
+
+  // Safe list references
+  const safeListId = currentList?.id || 'smart_all';
+  const safeListName = currentList?.name || 'Görevler & Notlar';
 
   // Filter tasks according to selected list or smart category
   const filteredTasks = useMemo(() => {
-    if (!currentList) return tasks;
+    if (!tasks || !Array.isArray(tasks)) return [];
 
     let result = [...tasks];
 
-    if (currentList.id === 'smart_myday') {
+    if (safeListId === 'smart_myday') {
       result = result.filter(t => isTaskActiveOnDate(t, new Date()));
-    } else if (currentList.id === 'smart_important') {
+    } else if (safeListId === 'smart_important') {
       result = result.filter(t => t.starred);
-    } else if (currentList.id === 'smart_planned') {
+    } else if (safeListId === 'smart_planned') {
       result = result.filter(t => Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')));
-    } else if (currentList.id === 'smart_all') {
+    } else if (safeListId === 'smart_all') {
       // all tasks
     } else {
-      // Custom list ID match
-      result = result.filter(t => t.listId === currentList.id);
+      result = result.filter(t => t.listId === safeListId);
     }
 
-    // Apply Sorting
     return result.sort((a, b) => {
       if (sortOption === 'star') {
         return (b.starred ? 1 : 0) - (a.starred ? 1 : 0);
@@ -69,22 +80,51 @@ const TaskListView = ({
         if (!b.dueDate) return -1;
         return new Date(a.dueDate) - new Date(b.dueDate);
       }
-      // default 'date': newest first
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
-  }, [tasks, currentList, sortOption]);
+  }, [tasks, safeListId, sortOption]);
 
   const activeTasks = useMemo(() => filteredTasks.filter(t => !t.completed), [filteredTasks]);
   const completedTasks = useMemo(() => filteredTasks.filter(t => t.completed), [filteredTasks]);
 
-  // Handle Add New Task
+  // Long-press and Task Card Selection Logic
+  const startLongPress = (task) => {
+    pressTimerRef.current = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(40);
+      setIsSelectMode(true);
+      setSelectedTaskIds(prev => prev.includes(task.id) ? prev : [...prev, task.id]);
+    }, 450);
+  };
+
+  const cancelLongPress = () => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  };
+
+  const handleTaskCardClick = (task) => {
+    if (isSelectMode) {
+      if (selectedTaskIds.includes(task.id)) {
+        const next = selectedTaskIds.filter(id => id !== task.id);
+        setSelectedTaskIds(next);
+        if (next.length === 0) setIsSelectMode(false);
+      } else {
+        setSelectedTaskIds([...selectedTaskIds, task.id]);
+      }
+    } else {
+      setSelectedTask(task);
+    }
+  };
+
+  // Add New Task
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
     let targetListId = 'list_programlanan';
-    if (currentList && !currentList.id.startsWith('smart_')) {
-      targetListId = currentList.id;
+    if (currentList && !safeListId.startsWith('smart_')) {
+      targetListId = safeListId;
     }
 
     let dueDateLabel = '';
@@ -101,7 +141,7 @@ const TaskListView = ({
       dueDate: newTaskDueDate,
       dueDateLabel: dueDateLabel,
       starred: newTaskStarred,
-      inMyDay: currentList?.id === 'smart_myday' || newTaskInMyDay,
+      inMyDay: safeListId === 'smart_myday' || newTaskInMyDay,
       repeatType: newTaskRepeatType,
       repeatDays: newTaskRepeatDays,
       recurring: newTaskRepeatType !== 'none'
@@ -138,10 +178,39 @@ const TaskListView = ({
     if (onRefreshData) onRefreshData();
   };
 
-  const handleDeleteTask = async (taskId, e) => {
-    e.stopPropagation();
-    await deleteCustomTask(taskId);
-    if (selectedTask?.id === taskId) setSelectedTask(null);
+  // Single Delete Confirmation Prompt
+  const onRequestDeleteTask = (task, e) => {
+    if (e) e.stopPropagation();
+    setDialog({
+      isOpen: true,
+      type: 'deleteSingleTask',
+      payload: { taskId: task.id, title: task.title }
+    });
+  };
+
+  // Bulk Delete Confirmation Prompt
+  const onRequestBulkDelete = () => {
+    if (selectedTaskIds.length === 0) return;
+    setDialog({
+      isOpen: true,
+      type: 'deleteBulkTasks',
+      payload: { count: selectedTaskIds.length }
+    });
+  };
+
+  // Execute Bulk Operations
+  const handleBulkMove = async (targetListId) => {
+    await bulkMoveCustomTasksToList(selectedTaskIds, targetListId);
+    setSelectedTaskIds([]);
+    setIsSelectMode(false);
+    setShowMoveModal(false);
+    if (onRefreshData) onRefreshData();
+  };
+
+  const handleBulkAddMyDay = async () => {
+    await bulkToggleMyDay(selectedTaskIds, true);
+    setSelectedTaskIds([]);
+    setIsSelectMode(false);
     if (onRefreshData) onRefreshData();
   };
 
@@ -170,16 +239,25 @@ const TaskListView = ({
 
   const handleRenameListPrompt = () => {
     if (!currentList || !currentList.id || currentList.id.startsWith('smart_')) return;
-    setDialog({ type: 'renameList', isOpen: true });
+    setDialog({ type: 'renameList', isOpen: true, payload: null });
   };
 
   const handleDeleteListPrompt = () => {
     if (!currentList || !currentList.id || currentList.id.startsWith('smart_')) return;
-    setDialog({ type: 'deleteList', isOpen: true });
+    setDialog({ type: 'deleteList', isOpen: true, payload: null });
   };
 
   const handleConfirmDialogAction = async (inputValue) => {
-    if (dialog.type === 'renameList' && inputValue && inputValue.trim()) {
+    if (dialog.type === 'deleteSingleTask') {
+      await deleteCustomTask(dialog.payload.taskId);
+      if (selectedTask?.id === dialog.payload.taskId) setSelectedTask(null);
+      if (onRefreshData) onRefreshData();
+    } else if (dialog.type === 'deleteBulkTasks') {
+      await bulkDeleteCustomTasks(selectedTaskIds);
+      setSelectedTaskIds([]);
+      setIsSelectMode(false);
+      if (onRefreshData) onRefreshData();
+    } else if (dialog.type === 'renameList' && inputValue && inputValue.trim()) {
       await renameCustomList(currentList.id, inputValue.trim());
       if (onRefreshData) onRefreshData();
     } else if (dialog.type === 'deleteList') {
@@ -187,7 +265,38 @@ const TaskListView = ({
       if (onRefreshData) onRefreshData();
       if (onNavigateToList) onNavigateToList('smart_all');
     }
-    setDialog({ isOpen: false, type: null });
+    setDialog({ isOpen: false, type: null, payload: null });
+  };
+
+  const getDialogProps = () => {
+    if (dialog.type === 'deleteSingleTask') {
+      return {
+        title: "Görevi Sil",
+        message: `'${dialog.payload?.title}' görevi silinecektir. Emin misiniz?`,
+        confirmText: "Evet, Sil"
+      };
+    } else if (dialog.type === 'deleteBulkTasks') {
+      return {
+        title: "Seçilen Görevleri Sil",
+        message: `${dialog.payload?.count} adet görev silinecektir. Emin misiniz?`,
+        confirmText: "Evet, Sil"
+      };
+    } else if (dialog.type === 'renameList') {
+      return {
+        title: "Listeyi Yeniden Adlandır",
+        message: "Yeni liste adını girin:",
+        type: "prompt",
+        defaultValue: safeListName,
+        confirmText: "Kaydet"
+      };
+    } else if (dialog.type === 'deleteList') {
+      return {
+        title: "Listeyi Sil",
+        message: `'${safeListName}' listesini ve içindeki tüm görevleri silmek istediğinize emin misiniz?`,
+        confirmText: "Evet, Sil"
+      };
+    }
+    return {};
   };
 
   // Helper to map list ID to name
@@ -202,11 +311,11 @@ const TaskListView = ({
       <div className="task-header-toolbar">
         <div className="task-header-left">
           <h1 className="task-header-title">
-            <span>{currentList?.name || 'Programlanan İşler'}</span>
+            <span>{safeListName}</span>
             <span className="task-header-count">({filteredTasks.length})</span>
           </h1>
 
-          {!currentList?.id?.startsWith('smart_') && !currentList?.isDefault && (
+          {!safeListId.startsWith('smart_') && !currentList?.isDefault && (
             <div className="task-header-actions">
               <button 
                 type="button" 
@@ -229,6 +338,17 @@ const TaskListView = ({
         </div>
 
         <div className="task-header-right">
+          {/* LIVE REFRESH BUTTON */}
+          <button 
+            type="button" 
+            className="icon-btn-subtle live-refresh-btn" 
+            onClick={() => { if (onRefreshData) onRefreshData(); }}
+            title="Buluttan Verileri Anında Yenile"
+          >
+            <RefreshCw size={18} />
+            <span className="btn-text-responsive">Yenile</span>
+          </button>
+
           {/* VIEW MODE TOGGLE */}
           <div className="view-mode-toggle">
             <button 
@@ -302,70 +422,74 @@ const TaskListView = ({
               title="Günüm'e Ekle"
             >
               <Sun size={18} />
-              <span className="tool-btn-text">Günüm</span>
+              <span>Günüm</span>
             </button>
 
-            {/* RECURRENCE (TEKRAR ETME / GÜN SEÇME) BUTTON */}
+            {/* REPEAT OPTIONS POPOVER */}
             <div className="repeat-popover-wrapper">
               <button
                 type="button"
                 className={`add-task-tool-btn ${newTaskRepeatType !== 'none' ? 'active' : ''}`}
                 onClick={() => setShowRepeatPopover(!showRepeatPopover)}
-                title="Tekrar Etme ve Gün Belirle"
+                title="Tekrar Etme Mantığı"
               >
-                <RefreshCw size={18} />
-                <span className="tool-btn-text">
-                  {newTaskRepeatType === 'none' ? 'Tekrar Et' : getRecurrenceLabel({ repeatType: newTaskRepeatType, repeatDays: newTaskRepeatDays })}
-                </span>
+                <Repeat size={18} />
+                <span>Tekrar Et</span>
               </button>
 
               {showRepeatPopover && (
                 <div className="repeat-popover-menu">
-                  <div className="popover-title">Tekrar Sıklığı / Gün Seçin</div>
-                  <button type="button" className={`popover-option ${newTaskRepeatType === 'none' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('none'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
+                  <div className="popover-title">Tekrarlama Seçeneği</div>
+                  <button 
+                    type="button" 
+                    className={`popover-option ${newTaskRepeatType === 'none' ? 'selected' : ''}`}
+                    onClick={() => { setNewTaskRepeatType('none'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}
+                  >
                     Tekrarlama Yok
                   </button>
-                  <button type="button" className={`popover-option ${newTaskRepeatType === 'daily' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('daily'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
-                    🔄 Her Gün
+                  <button 
+                    type="button" 
+                    className={`popover-option ${newTaskRepeatType === 'daily' ? 'selected' : ''}`}
+                    onClick={() => { setNewTaskRepeatType('daily'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}
+                  >
+                    Her Gün
                   </button>
-                  <button type="button" className={`popover-option ${newTaskRepeatType === 'weekdays' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('weekdays'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
-                    💼 Hafta İçi (Pzt-Cum)
+                  <button 
+                    type="button" 
+                    className={`popover-option ${newTaskRepeatType === 'weekdays' ? 'selected' : ''}`}
+                    onClick={() => { setNewTaskRepeatType('weekdays'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}
+                  >
+                    Hafta İçi (Pzt-Cum)
                   </button>
-                  <button type="button" className={`popover-option ${newTaskRepeatType === 'weekly' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('weekly'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
-                    📅 Haftalık
+                  <button 
+                    type="button" 
+                    className={`popover-option ${newTaskRepeatType === 'weekly' ? 'selected' : ''}`}
+                    onClick={() => { setNewTaskRepeatType('weekly'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}
+                  >
+                    Haftalık
                   </button>
 
-                  <div className="popover-subtitle">VEYA Özel Gün(ler) Seçin:</div>
+                  <div className="popover-subtitle">Özel Gün(ler) Seç:</div>
                   <div className="days-chip-group">
-                    {DAY_KEYS.map(dk => (
+                    {DAY_KEYS.map(dayKey => (
                       <button
-                        key={dk}
+                        key={dayKey}
                         type="button"
-                        className={`day-chip ${newTaskRepeatDays.includes(dk) ? 'active' : ''}`}
-                        onClick={() => toggleQuickRepeatDay(dk)}
+                        className={`day-chip ${newTaskRepeatDays.includes(dayKey) ? 'active' : ''}`}
+                        onClick={() => toggleQuickRepeatDay(dayKey)}
                       >
-                        {dk}
+                        {dayKey}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-
-            <button
-              type="button"
-              className={`add-task-tool-btn ${newTaskStarred ? 'active' : ''}`}
-              onClick={() => setNewTaskStarred(!newTaskStarred)}
-              title="Önemli İşaretle"
-            >
-              <Star size={18} className={newTaskStarred ? 'star-filled' : ''} />
-              <span className="tool-btn-text">Önemli</span>
-            </button>
           </div>
 
           <button 
             type="submit" 
-            className="add-task-submit-btn" 
+            className="add-task-submit-btn"
             disabled={!newTaskTitle.trim()}
           >
             Ekle
@@ -373,10 +497,9 @@ const TaskListView = ({
         </div>
       </form>
 
-      {/* MAIN CONTENT: LIST OR TABLE */}
+      {/* TASKS LIST OR TABLE VIEW */}
       {viewMode === 'list' ? (
         <div className="tasks-list-container">
-          {/* ACTIVE TASKS */}
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="empty-tasks-state">
               <CheckSquare size={52} className="empty-icon" />
@@ -384,76 +507,92 @@ const TaskListView = ({
               <p>Yukarıdaki alandan yeni bir görev veya not ekleyebilirsiniz.</p>
             </div>
           ) : (
-            activeTasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`task-item-card ${task.completed ? 'completed' : ''} ${selectedTask?.id === task.id ? 'selected' : ''}`}
-                onClick={() => setSelectedTask(task)}
-              >
-                <button 
-                  type="button" 
-                  className="task-check-btn"
-                  onClick={(e) => handleToggleComplete(task.id, e)}
-                  title="Tamamlandı İşaretle"
+            activeTasks.map(task => {
+              const isSelected = selectedTaskIds.includes(task.id);
+
+              return (
+                <div 
+                  key={task.id} 
+                  className={`task-item-card ${task.completed ? 'completed' : ''} ${selectedTask?.id === task.id ? 'selected' : ''} ${isSelected ? 'bulk-selected' : ''}`}
+                  onClick={() => handleTaskCardClick(task)}
+                  onTouchStart={() => startLongPress(task)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  onMouseDown={() => startLongPress(task)}
+                  onMouseUp={cancelLongPress}
+                  onMouseLeave={cancelLongPress}
                 >
-                  <Circle size={22} className="circle-icon" />
-                </button>
+                  {isSelectMode ? (
+                    <div className={`bulk-checkbox ${isSelected ? 'checked' : ''}`}>
+                      {isSelected ? <CheckCircle2 size={22} className="text-primary" /> : <Circle size={22} className="text-muted" />}
+                    </div>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className="task-check-btn"
+                      onClick={(e) => handleToggleComplete(task.id, e)}
+                      title="Tamamlandı İşaretle"
+                    >
+                      <Circle size={22} className="circle-icon" />
+                    </button>
+                  )}
 
-                <div className="task-item-body">
-                  <span className="task-item-title">{task.title}</span>
+                  <div className="task-item-body">
+                    <span className="task-item-title">{task.title}</span>
 
-                  <div className="task-item-badges">
-                    {task.inMyDay && (
-                      <span className="task-badge badge-myday">
-                        <Sun size={13} /> Günüm
-                      </span>
-                    )}
+                    <div className="task-item-badges">
+                      {task.inMyDay && (
+                        <span className="task-badge badge-myday">
+                          <Sun size={13} /> Günüm
+                        </span>
+                      )}
 
-                    {(task.dueDateLabel || task.dueDate) && (
-                      <span className="task-badge badge-date">
-                        <Calendar size={13} /> Son tarih: {task.dueDateLabel || task.dueDate}
-                      </span>
-                    )}
+                      {(task.dueDateLabel || task.dueDate) && (
+                        <span className="task-badge badge-date">
+                          <Calendar size={13} /> Son tarih: {task.dueDateLabel || task.dueDate}
+                        </span>
+                      )}
 
-                    {(task.repeatType && task.repeatType !== 'none') ? (
-                      <span className="task-badge badge-repeat" title="Tekrar Etme Mantığı">
-                        <RefreshCw size={13} /> {getRecurrenceLabel(task)}
-                      </span>
-                    ) : task.recurring && (
-                      <span className="task-badge badge-subtle" title="Tekrarlayan İş">
-                        <RefreshCw size={13} /> Tekrarlayan
-                      </span>
-                    )}
+                      {(task.repeatType && task.repeatType !== 'none') ? (
+                        <span className="task-badge badge-repeat" title="Tekrar Etme Mantığı">
+                          <RefreshCw size={13} /> {getRecurrenceLabel(task)}
+                        </span>
+                      ) : task.recurring && (
+                        <span className="task-badge badge-subtle" title="Tekrarlayan İş">
+                          <RefreshCw size={13} /> Tekrarlayan
+                        </span>
+                      )}
 
-                    {currentList?.id.startsWith('smart_') && (
-                      <span className="task-badge badge-list">
-                        <Tag size={13} /> {getListName(task.listId)}
-                      </span>
-                    )}
+                      {safeListId.startsWith('smart_') && (
+                        <span className="task-badge badge-list">
+                          <Tag size={13} /> {getListName(task.listId)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="task-item-actions">
+                    <button 
+                      type="button" 
+                      className="task-star-btn"
+                      onClick={(e) => handleToggleStar(task.id, e)}
+                      title={task.starred ? "Önemli İşaretini Kaldır" : "Önemli İşaretle"}
+                    >
+                      <Star size={20} className={task.starred ? 'star-filled' : 'star-outline'} />
+                    </button>
+
+                    <button 
+                      type="button"
+                      className="task-delete-btn"
+                      onClick={(e) => onRequestDeleteTask(task, e)}
+                      title="Görevi Sil"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
-
-                <div className="task-item-actions">
-                  <button 
-                    type="button" 
-                    className="task-star-btn"
-                    onClick={(e) => handleToggleStar(task.id, e)}
-                    title={task.starred ? "Önemli İşaretini Kaldır" : "Önemli İşaretle"}
-                  >
-                    <Star size={20} className={task.starred ? 'star-filled' : 'star-outline'} />
-                  </button>
-
-                  <button 
-                    type="button"
-                    className="task-delete-btn"
-                    onClick={(e) => handleDeleteTask(task.id, e)}
-                    title="Görevi Sil"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
 
           {/* COMPLETED TASKS ACCORDION */}
@@ -464,215 +603,260 @@ const TaskListView = ({
                 className="completed-tasks-toggle"
                 onClick={() => setShowCompleted(!showCompleted)}
               >
-                {showCompleted ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                {showCompleted ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 <span>Tamamlananlar ({completedTasks.length})</span>
               </button>
 
-              {showCompleted && completedTasks.map(task => (
-                <div 
-                  key={task.id} 
-                  className="task-item-card completed"
-                  onClick={() => setSelectedTask(task)}
-                >
-                  <button 
-                    type="button" 
-                    className="task-check-btn checked"
-                    onClick={(e) => handleToggleComplete(task.id, e)}
-                    title="Tamamlanmadı İşaretle"
+              {showCompleted && completedTasks.map(task => {
+                const isSelected = selectedTaskIds.includes(task.id);
+                return (
+                  <div 
+                    key={task.id} 
+                    className={`task-item-card completed ${selectedTask?.id === task.id ? 'selected' : ''} ${isSelected ? 'bulk-selected' : ''}`}
+                    onClick={() => handleTaskCardClick(task)}
+                    onTouchStart={() => startLongPress(task)}
+                    onTouchEnd={cancelLongPress}
+                    onTouchMove={cancelLongPress}
+                    onMouseDown={() => startLongPress(task)}
+                    onMouseUp={cancelLongPress}
+                    onMouseLeave={cancelLongPress}
                   >
-                    <CheckCircle2 size={22} className="check-icon" />
-                  </button>
+                    {isSelectMode ? (
+                      <div className={`bulk-checkbox ${isSelected ? 'checked' : ''}`}>
+                        {isSelected ? <CheckCircle2 size={22} className="text-primary" /> : <Circle size={22} className="text-muted" />}
+                      </div>
+                    ) : (
+                      <button 
+                        type="button" 
+                        className="task-check-btn checked"
+                        onClick={(e) => handleToggleComplete(task.id, e)}
+                        title="Tamamlanmadı Olarak İşaretle"
+                      >
+                        <CheckCircle2 size={22} />
+                      </button>
+                    )}
 
-                  <div className="task-item-body">
-                    <span className="task-item-title line-through">{task.title}</span>
-                  </div>
+                    <div className="task-item-body">
+                      <span className="task-item-title line-through">{task.title}</span>
+                    </div>
 
-                  <div className="task-item-actions">
-                    <button 
-                      type="button" 
-                      className="task-star-btn"
-                      onClick={(e) => handleToggleStar(task.id, e)}
-                    >
-                      <Star size={20} className={task.starred ? 'star-filled' : 'star-outline'} />
-                    </button>
-                    <button 
-                      type="button"
-                      className="task-delete-btn"
-                      onClick={(e) => handleDeleteTask(task.id, e)}
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <div className="task-item-actions">
+                      <button 
+                        type="button"
+                        className="task-delete-btn"
+                        onClick={(e) => onRequestDeleteTask(task, e)}
+                        title="Görevi Sil"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       ) : (
-        /* TABLE VIEW */
+        /* TABLE VIEW MODE */
         <div className="tasks-table-container">
           <table className="tasks-table">
             <thead>
               <tr>
-                <th style={{ width: '45px' }}>Durum</th>
-                <th>Görev / Not Başlığı</th>
-                <th>Kategori / Liste</th>
-                <th>Tekrar / Günler</th>
+                <th style={{ width: '40px' }}></th>
+                <th>Görev / Not</th>
+                <th>Ait Olduğu Liste</th>
                 <th>Son Tarih</th>
-                <th style={{ width: '60px' }}>Önemli</th>
-                <th style={{ width: '80px' }}>İşlemler</th>
+                <th>Tekrar</th>
+                <th style={{ width: '80px' }}>İşlem</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
-                    Görev bulunamadı.
+              {filteredTasks.map(task => (
+                <tr 
+                  key={task.id}
+                  className={task.completed ? 'completed-tr' : ''}
+                  onClick={() => setSelectedTask(task)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      type="button" 
+                      className={`task-check-btn ${task.completed ? 'checked' : ''}`}
+                      onClick={(e) => handleToggleComplete(task.id, e)}
+                    >
+                      {task.completed ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                    </button>
                   </td>
-                </tr>
-              ) : (
-                filteredTasks.map(task => (
-                  <tr key={task.id} className={task.completed ? 'completed-tr' : ''}>
-                    <td>
+                  <td>
+                    <span className={`task-table-title ${task.completed ? 'line-through' : ''}`}>
+                      {task.title}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="task-badge badge-list">
+                      {getListName(task.listId)}
+                    </span>
+                  </td>
+                  <td>{task.dueDateLabel || task.dueDate || '-'}</td>
+                  <td>{getRecurrenceLabel(task) || '-'}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
                       <button 
-                        type="button"
-                        className="table-check-btn"
-                        onClick={(e) => handleToggleComplete(task.id, e)}
-                      >
-                        {task.completed ? <CheckCircle2 size={20} className="check-icon" /> : <Circle size={20} />}
-                      </button>
-                    </td>
-                    <td onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
-                      <span className={task.completed ? 'line-through' : ''}>{task.title}</span>
-                    </td>
-                    <td>
-                      <span className="table-badge-list">{getListName(task.listId)}</span>
-                    </td>
-                    <td>
-                      {task.repeatType && task.repeatType !== 'none' ? (
-                        <span className="table-badge-repeat">{getRecurrenceLabel(task)}</span>
-                      ) : '-'}
-                    </td>
-                    <td>
-                      {task.dueDateLabel || task.dueDate ? (
-                        <span className="table-badge-date">{task.dueDateLabel || task.dueDate}</span>
-                      ) : '-'}
-                    </td>
-                    <td>
-                      <button 
-                        type="button"
-                        className="table-star-btn"
+                        type="button" 
+                        className="task-star-btn"
                         onClick={(e) => handleToggleStar(task.id, e)}
                       >
                         <Star size={18} className={task.starred ? 'star-filled' : 'star-outline'} />
                       </button>
-                    </td>
-                    <td>
                       <button 
                         type="button"
-                        className="table-delete-btn"
-                        onClick={(e) => handleDeleteTask(task.id, e)}
+                        className="task-delete-btn"
+                        onClick={(e) => onRequestDeleteTask(task, e)}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* TASK DETAIL DRAWER / MODAL */}
+      {/* FLOATING BULK ACTION TOOLBAR */}
+      {isSelectMode && selectedTaskIds.length > 0 && (
+        <div className="bulk-action-bar no-print">
+          <div className="bulk-info">
+            <strong>{selectedTaskIds.length}</strong> Görev Seçildi
+          </div>
+          <div className="bulk-buttons">
+            <button type="button" className="bulk-btn" onClick={handleBulkAddMyDay} title="Günüm'e Ekle">
+              <Sun size={16} /> <span>Günüm</span>
+            </button>
+            <button type="button" className="bulk-btn" onClick={() => setShowMoveModal(true)} title="Başka Listeye Taşı">
+              <Folder size={16} /> <span>Taşı</span>
+            </button>
+            <button type="button" className="bulk-btn bulk-btn-danger" onClick={onRequestBulkDelete} title="Seçilenleri Sil">
+              <Trash2 size={16} /> <span>Sil</span>
+            </button>
+            <button type="button" className="bulk-btn bulk-btn-cancel" onClick={() => { setSelectedTaskIds([]); setIsSelectMode(false); }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* BULK MOVE TO LIST MODAL */}
+      {showMoveModal && (
+        <div className="task-detail-modal-overlay" onClick={() => setShowMoveModal(false)}>
+          <div className="move-list-modal-card" onClick={e => e.stopPropagation()}>
+            <h3>Seçilen Görevleri Başka Listeye Taşı</h3>
+            <p>{selectedTaskIds.length} adet görevin aktarılacağı hedef listeyi seçin:</p>
+            <div className="move-lists-options">
+              {customLists.map(l => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className="move-list-option-btn"
+                  onClick={() => handleBulkMove(l.id)}
+                >
+                  <Tag size={16} />
+                  <span>{l.name}</span>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="move-modal-cancel-btn" onClick={() => setShowMoveModal(false)}>
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TASK DETAIL DRAWER */}
       {selectedTask && (
         <div className="task-detail-modal-overlay" onClick={() => setSelectedTask(null)}>
           <div className="task-detail-modal" onClick={(e) => e.stopPropagation()}>
             <div className="task-detail-header">
               <button 
-                type="button"
+                type="button" 
                 className="task-check-btn"
                 onClick={(e) => handleToggleComplete(selectedTask.id, e)}
               >
-                {selectedTask.completed ? <CheckCircle2 size={24} className="check-icon" /> : <Circle size={24} />}
+                {selectedTask.completed ? <CheckCircle2 size={24} className="text-success" /> : <Circle size={24} />}
               </button>
-
               <input
                 type="text"
                 value={selectedTask.title}
                 onChange={(e) => handleUpdateTaskDetail({ title: e.target.value })}
                 className="task-detail-title-input"
               />
-
               <button 
-                type="button"
+                type="button" 
+                className="task-star-btn"
+                onClick={(e) => handleToggleStar(selectedTask.id, e)}
+              >
+                <Star size={24} className={selectedTask.starred ? 'star-filled' : 'star-outline'} />
+              </button>
+              <button 
+                type="button" 
                 className="task-detail-close-btn"
                 onClick={() => setSelectedTask(null)}
               >
-                <X size={22} />
+                <X size={20} />
               </button>
             </div>
 
             <div className="task-detail-body">
-              {/* MY DAY TOGGLE */}
               <button
                 type="button"
                 className={`task-detail-action-btn ${selectedTask.inMyDay ? 'active' : ''}`}
                 onClick={() => handleUpdateTaskDetail({ inMyDay: !selectedTask.inMyDay })}
               >
-                <Sun size={20} />
-                <span>{selectedTask.inMyDay ? "Günüm'den Çıkar" : "Günüm'e Ekle"}</span>
+                <Sun size={18} />
+                <span>{selectedTask.inMyDay ? 'Günüm\'den Çıkar' : 'Günüm\'e Ekle'}</span>
               </button>
 
-              {/* STAR TOGGLE */}
-              <button
-                type="button"
-                className={`task-detail-action-btn ${selectedTask.starred ? 'active' : ''}`}
-                onClick={() => handleUpdateTaskDetail({ starred: !selectedTask.starred })}
-              >
-                <Star size={20} className={selectedTask.starred ? 'star-filled' : ''} />
-                <span>{selectedTask.starred ? "Önemli İşaretini Kaldır" : "Önemli İşaretle"}</span>
-              </button>
-
-              {/* RECURRENCE / DAY SELECTION FIELD */}
+              {/* RECURRENCE OPTIONS IN DETAIL DRAWER */}
               <div className="task-detail-field">
-                <label><RefreshCw size={18} /> Tekrar Etme Mantığı & Gün Belirleme</label>
+                <label><Repeat size={18} /> Tekrar Etme Mantığı</label>
                 <select
                   value={selectedTask.repeatType || 'none'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    handleUpdateTaskDetail({
-                      repeatType: val,
-                      recurring: val !== 'none'
-                    });
-                  }}
+                  onChange={(e) => handleUpdateTaskDetail({ 
+                    repeatType: e.target.value,
+                    recurring: e.target.value !== 'none'
+                  })}
                   className="task-detail-select"
                 >
                   <option value="none">Tekrarlama Yok</option>
-                  <option value="daily">🔄 Her Gün</option>
-                  <option value="weekdays">💼 Hafta İçi (Pazartesi - Cuma)</option>
-                  <option value="weekly">📅 Haftalık (Her hafta bu gün)</option>
-                  <option value="monthly">📅 Aylık</option>
-                  <option value="custom">⚙️ Özel Gün Seçimi</option>
+                  <option value="daily">Her Gün</option>
+                  <option value="weekdays">Hafta İçi (Pzt-Cum)</option>
+                  <option value="weekly">Haftalık</option>
+                  <option value="monthly">Aylık</option>
+                  <option value="custom">Özel Gün(ler)</option>
                 </select>
-
-                {/* CUSTOM DAYS SELECTION CHIPS */}
-                <div className="days-chip-group style-detail">
-                  {DAY_KEYS.map(dk => {
-                    const isSelected = Array.isArray(selectedTask.repeatDays) && selectedTask.repeatDays.includes(dk);
-                    return (
-                      <button
-                        key={dk}
-                        type="button"
-                        className={`day-chip ${isSelected ? 'active' : ''}`}
-                        onClick={() => toggleDetailRepeatDay(dk)}
-                      >
-                        {dk}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
+
+              {selectedTask.repeatType === 'custom' && (
+                <div className="task-detail-field">
+                  <label>Özel Günler:</label>
+                  <div className="days-chip-group">
+                    {DAY_KEYS.map(dayKey => {
+                      const active = Array.isArray(selectedTask.repeatDays) && selectedTask.repeatDays.includes(dayKey);
+                      return (
+                        <button
+                          key={dayKey}
+                          type="button"
+                          className={`day-chip ${active ? 'active' : ''}`}
+                          onClick={() => toggleDetailRepeatDay(dayKey)}
+                        >
+                          {dayKey}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* DUE DATE SELECTOR */}
               <div className="task-detail-field">
@@ -726,7 +910,7 @@ const TaskListView = ({
               <button 
                 type="button" 
                 className="task-detail-delete-btn"
-                onClick={(e) => handleDeleteTask(selectedTask.id, e)}
+                onClick={(e) => onRequestDeleteTask(selectedTask, e)}
               >
                 <Trash2 size={18} /> Görevi Sil
               </button>
@@ -742,16 +926,12 @@ const TaskListView = ({
         </div>
       )}
 
-      {/* DIALOG FOR LIST RENAME/DELETE */}
+      {/* CONFIRMATION DIALOG */}
       <DialogModal 
         isOpen={dialog.isOpen}
-        title={dialog.type === 'renameList' ? "Listeyi Yeniden Adlandır" : "Listeyi Sil"}
-        message={dialog.type === 'renameList' ? "Yeni liste ismini girin:" : `'${currentList?.name}' listesini ve içindeki tüm görevleri silmek istediğinize emin misiniz?`}
-        type={dialog.type === 'renameList' ? "prompt" : "confirm"}
-        defaultValue={currentList?.name}
-        confirmText={dialog.type === 'renameList' ? "Kaydet" : "Evet, Sil"}
+        {...getDialogProps()}
         onConfirm={handleConfirmDialogAction}
-        onCancel={() => setDialog({ isOpen: false, type: null })}
+        onCancel={() => setDialog({ isOpen: false, type: null, payload: null })}
       />
     </div>
   );

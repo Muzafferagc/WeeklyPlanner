@@ -61,7 +61,7 @@ function App() {
   useEffect(() => {
     // Setup Realtime Cloud Sync Listener
     const room = getSyncRoom();
-    subscribeToCloudSync(room, async (cloudData) => {
+    const handleSync = async (cloudData) => {
       if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
         const res = await importData(JSON.stringify(cloudData));
         if (res && res.success) {
@@ -73,7 +73,20 @@ function App() {
           setCustomTasks(loadedTasks);
         }
       }
-    });
+    };
+
+    subscribeToCloudSync(room, handleSync);
+
+    // Periodic Cloud Sync Polling every 4 seconds to guarantee instantaneous 2-way sync
+    const pollInterval = setInterval(async () => {
+      try {
+        const { fetchCloudState } = await import('./utils/syncService');
+        const cloudData = await fetchCloudState(room);
+        handleSync(cloudData);
+      } catch(e) {}
+    }, 4000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {

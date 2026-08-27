@@ -594,6 +594,30 @@ export const toggleTaskComplete = async (taskId) => {
   return updatedTasks;
 };
 
+export const bulkDeleteCustomTasks = async (taskIds) => {
+  if (!Array.isArray(taskIds) || taskIds.length === 0) return [];
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.filter(t => !taskIds.includes(t.id));
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+export const bulkMoveCustomTasksToList = async (taskIds, targetListId) => {
+  if (!Array.isArray(taskIds) || taskIds.length === 0 || !targetListId) return [];
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.map(t => taskIds.includes(t.id) ? { ...t, listId: targetListId } : t);
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+export const bulkToggleMyDay = async (taskIds, inMyDay = true) => {
+  if (!Array.isArray(taskIds) || taskIds.length === 0) return [];
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.map(t => taskIds.includes(t.id) ? { ...t, inMyDay } : t);
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
 
 export const exportData = async (weekIds = null, activeWeekId = null) => {
   let weeks = await getWeeks();
