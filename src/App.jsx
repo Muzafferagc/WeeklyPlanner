@@ -82,17 +82,6 @@ function App() {
     };
 
     subscribeToCloudSync(room, handleSync);
-
-    // Periodic Cloud Sync Polling every 3 seconds to guarantee instantaneous 2-way sync
-    const pollInterval = setInterval(async () => {
-      try {
-        const { fetchCloudState } = await import('./utils/syncService');
-        const cloudData = await fetchCloudState(room);
-        handleSync(cloudData);
-      } catch(e) {}
-    }, 3000);
-
-    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {

@@ -1,124 +1,59 @@
-// --- NTFY.SH ULTRA-FAST REALTIME CLOUD SYNC SERVICE ---
+// --- RESTFUL CLOUD REALTIME SYNC SERVICE ---
 
-const NTFY_BASE_URL = 'https://ntfy.sh';
+const CLOUD_OBJECT_ID = 'ff8081819ff5b11001a0411673852db9';
+const API_URL = `https://api.restful-api.dev/objects/${CLOUD_OBJECT_ID}`;
 
 export const getSyncRoom = () => {
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomFromUrl = urlParams.get('room');
-    if (roomFromUrl) {
-      const cleanRoom = roomFromUrl.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      try { localStorage.setItem('sync_room_id', cleanRoom); } catch (e) {}
-      return cleanRoom;
-    }
-
-    let savedRoom = null;
-    try { savedRoom = localStorage.getItem('sync_room_id'); } catch (e) {}
-    if (!savedRoom || savedRoom === 'undefined' || savedRoom === 'null') {
-      savedRoom = 'muzaffer-plan-2026';
-      try { localStorage.setItem('sync_room_id', savedRoom); } catch (e) {}
-    }
-    return savedRoom;
-  } catch (err) {
-    return 'muzaffer-plan-2026';
-  }
+  return 'MUZAFFER-PLAN-2026';
 };
 
 export const setSyncRoom = (roomId) => {
-  const cleanRoom = roomId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-  try { localStorage.setItem('sync_room_id', cleanRoom); } catch (e) {}
-  return cleanRoom;
+  return 'MUZAFFER-PLAN-2026';
 };
 
-// Extract data from ntfy JSON message
-const extractStateFromMessage = (msgText) => {
+export const fetchCloudState = async () => {
   try {
-    if (!msgText) return null;
-    const obj = typeof msgText === 'string' ? JSON.parse(msgText) : msgText;
-    
-    // 1. If wrapped in ntfy message container
-    if (obj && obj.message) {
-      try {
-        const inner = typeof obj.message === 'string' ? JSON.parse(obj.message) : obj.message;
-        if (inner && inner.weeks && Array.isArray(inner.weeks)) return inner;
-      } catch (e) {}
-    }
-    
-    // 2. Direct state object
-    if (obj && obj.weeks && Array.isArray(obj.weeks)) return obj;
-  } catch (e) {}
-  return null;
-};
-
-export const fetchCloudState = async (roomId) => {
-  try {
-    const topic = roomId || getSyncRoom();
-    const url = `${NTFY_BASE_URL}/${topic}/json?poll=1`;
-    const res = await fetch(url);
+    const res = await fetch(API_URL);
     if (!res.ok) return null;
-    const text = await res.text();
-    
-    // ntfy returns line-delimited JSON for poll
-    const lines = text.trim().split('\n').filter(Boolean);
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const state = extractStateFromMessage(lines[i]);
-      if (state) return state;
+    const json = await res.json();
+    if (json && json.data && typeof json.data === 'object' && Array.isArray(json.data.weeks)) {
+      return json.data;
     }
   } catch (e) {}
   return null;
 };
 
-let activeEventSource = null;
-let isBroadcasting = false;
+let activePollInterval = null;
 
 export const subscribeToCloudSync = async (roomId, onDataReceived) => {
-  const topic = roomId || getSyncRoom();
-
-  if (activeEventSource) {
-    activeEventSource.close();
+  if (activePollInterval) {
+    clearInterval(activePollInterval);
   }
 
   // 1. Initial Fetch on Connect
-  const initialData = await fetchCloudState(topic);
+  const initialData = await fetchCloudState();
   if (initialData) {
     onDataReceived(initialData);
   }
 
-  // 2. Subscribe to Realtime SSE Stream
-  try {
-    const streamUrl = `${NTFY_BASE_URL}/${topic}/json`;
-    const es = new EventSource(streamUrl);
-    activeEventSource = es;
-
-    es.onmessage = (event) => {
-      if (isBroadcasting) return; // Skip echo from own broadcast
-      try {
-        const state = extractStateFromMessage(event.data);
-        if (state) {
-          onDataReceived(state);
-        }
-      } catch (e) {}
-    };
-
-    es.onerror = () => {
-      // EventSource auto reconnects
-    };
-  } catch (err) {}
+  // 2. Poll every 2.5 seconds
+  activePollInterval = setInterval(async () => {
+    const data = await fetchCloudState();
+    if (data) {
+      onDataReceived(data);
+    }
+  }, 2500);
 };
 
 export const broadcastToCloud = async (roomId, fullState) => {
-  const topic = roomId || getSyncRoom();
-  isBroadcasting = true;
   try {
-    const url = `${NTFY_BASE_URL}/${topic}`;
-    await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(fullState)
+    await fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'MUZAFFER-PLAN-2026',
+        data: fullState
+      })
     });
-  } catch (err) {
-  } finally {
-    setTimeout(() => {
-      isBroadcasting = false;
-    }, 400);
-  }
+  } catch (err) {}
 };
