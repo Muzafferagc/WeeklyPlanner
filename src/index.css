@@ -3669,6 +3669,22 @@ body {
   }
 }
 
+.task-badge.badge-list {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #2563eb !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 0.2rem 0.55rem !important;
+  font-size: 0.78rem !important;
+}
+
+[data-theme="dark"] .task-badge.badge-list {
+  background: rgba(96, 165, 250, 0.2) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
+}
+
 .add-task-list-dropdown {
   background: transparent;
   border: none;
