@@ -3379,15 +3379,45 @@ body {
   }
 }
 
-/* MOBILE RESPONSIVE & PWA NATIVE STYLES */
+/* NATIVE NATIVE IOS MOBILE DESIGN SYSTEM */
 @media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column;
-    padding-bottom: 75px; /* Space for Mobile Bottom Nav */
-    padding-top: env(safe-area-inset-top);
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    background: var(--bg-color, #f8fafc) !important;
   }
 
-  /* HIDE DESKTOP SIDEBAR & CONVERT TO MOBILE OVERLAY DRAWER */
+  /* REMOVE NOTEBOOK RED LINE & PATTERN ON MOBILE */
+  body::before, body::after, .app-layout::before {
+    display: none !important;
+  }
+
+  .app-layout {
+    flex-direction: column;
+    padding-bottom: 80px; /* Space for Mobile Bottom Nav */
+    padding-top: env(safe-area-inset-top);
+    background: var(--bg-color, #f8fafc) !important;
+    min-height: 100vh;
+  }
+
+  .app-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 0 !important;
+    box-sizing: border-border-box;
+    overflow-x: hidden;
+  }
+
+  /* HIDE CLUTTERY DESKTOP BARS ON MOBILE */
+  .top-global-bar {
+    display: none !important;
+  }
+
+  .btn-text-responsive {
+    display: none !important;
+  }
+
+  /* MOBILE SIDEBAR OVERLAY DRAWER */
   .sidebar {
     position: fixed;
     top: 0;
@@ -3417,12 +3447,100 @@ body {
     width: 100vw;
     height: 100vh;
     background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(4px);
     z-index: 1100;
     animation: fadeIn 0.2s ease;
   }
 
-  /* MOBILE BOTTOM NAVIGATION BAR */
+  /* MOBILE CONTAINER & TOOLBAR */
+  .task-list-view-container {
+    padding: 1rem 0.9rem;
+    gap: 0.9rem;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box;
+  }
+
+  .task-header-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .task-header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .task-header-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .task-header-right {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .task-sort-select {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.65rem;
+  }
+
+  /* QUICK ADD TASK CARD ON MOBILE */
+  .add-task-card {
+    padding: 0.85rem 0.95rem;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  .add-task-input {
+    font-size: 1.05rem;
+  }
+
+  .add-task-options-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .add-task-tools {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .add-task-tool-btn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  /* TASK ITEM CARDS ON MOBILE */
+  .task-item-card {
+    padding: 0.85rem 0.95rem;
+    border-radius: 12px;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .task-item-title {
+    font-size: 1.05rem;
+    line-height: 1.35;
+  }
+
+  .task-item-badges {
+    gap: 0.35rem;
+  }
+
+  .task-badge {
+    font-size: 0.76rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  /* IOS NATIVE GLASSMORPHISM BOTTOM NAVIGATION BAR */
   .mobile-bottom-nav {
     display: flex;
     justify-content: space-around;
@@ -3432,15 +3550,18 @@ body {
     left: 0;
     width: 100%;
     height: 65px;
-    background: var(--card-bg, #ffffff);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
     z-index: 1000;
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   [data-theme="dark"] .mobile-bottom-nav {
-    background: #1e293b;
+    background: rgba(30, 41, 59, 0.88);
+    border-top-color: rgba(255, 255, 255, 0.08);
   }
 
   .mobile-nav-btn {
@@ -3453,9 +3574,9 @@ body {
     height: 100%;
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: #64748b;
     font-family: inherit;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -3466,29 +3587,35 @@ body {
     font-weight: 800;
   }
 
+  [data-theme="dark"] .mobile-nav-btn {
+    color: #94a3b8;
+  }
+
   [data-theme="dark"] .mobile-nav-btn.active {
     color: #60a5fa;
   }
 
-  .mobile-icon-wrap {
+  .mobile-icon-container {
     position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
 
-  .mobile-badge {
+  .mobile-badge-dot {
     position: absolute;
-    top: -5px;
-    right: -10px;
+    top: -6px;
+    right: -12px;
     background: #ef4444;
     color: #ffffff;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 800;
     padding: 1px 5px;
     border-radius: 10px;
     min-width: 16px;
     text-align: center;
+    border: 2px solid var(--card-bg, #ffffff);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
   }
 
   /* PWA BANNER STYLES */
@@ -3501,7 +3628,7 @@ body {
     max-width: 440px;
     background: #2563eb;
     color: #ffffff;
-    padding: 0.95rem 1.15rem;
+    padding: 0.85rem 1.1rem;
     border-radius: 14px;
     box-shadow: 0 8px 30px rgba(37, 99, 235, 0.4);
     z-index: 1050;
@@ -3511,79 +3638,17 @@ body {
     animation: slideUp 0.3s ease-out;
   }
 
-  @keyframes slideUp {
-    from { opacity: 0; transform: translate(-50%, 20px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-  }
-
   .pwa-banner-close {
     position: absolute;
-    top: 8px;
+    top: 6px;
     right: 8px;
     background: transparent;
     border: none;
     color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
   }
-
-  .pwa-banner-content {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-  }
-
-  .pwa-banner-icon {
-    font-size: 1.8rem;
-  }
-
-  .pwa-banner-text h3 {
-    margin: 0 0 3px 0;
-    font-size: 0.98rem;
-    font-weight: 800;
-  }
-
-  .pwa-banner-text p {
-    margin: 0;
-    font-size: 0.82rem;
-    line-height: 1.35;
-    opacity: 0.95;
-  }
-
-  /* CONTAINER ADJUSTMENTS FOR MOBILE TOUCH */
-  .task-list-view-container {
-    padding: 1rem;
-    gap: 1rem;
-  }
-
-  .task-header-title {
-    font-size: 1.65rem;
-  }
-
-  .add-task-card {
-    padding: 0.85rem 1rem;
-  }
-
-  .add-task-input {
-    font-size: 1.05rem;
-  }
-
-  .task-item-card {
-    padding: 0.85rem 1rem;
-  }
-
-  .task-item-title {
-    font-size: 1.05rem;
-  }
-
-  .top-global-bar {
-    padding: 0.75rem 1rem;
-  }
-
-  .bar-actions-right {
-    width: 100%;
-    justify-content: space-between;
-  }
 }
+
 
 
 
