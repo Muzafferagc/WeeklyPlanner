@@ -19,6 +19,29 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
 
+  const slotTouchTimerRef = React.useRef(null);
+
+  const startSlotLongPress = (day, slot) => {
+    slotTouchTimerRef.current = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(40);
+      setSelectedSlots(prev => {
+        const exists = prev.find(s => s.id === slot.id);
+        if (exists) {
+          return prev.filter(s => s.id !== slot.id);
+        } else {
+          return [...prev, { day, id: slot.id }];
+        }
+      });
+    }, 450);
+  };
+
+  const cancelSlotLongPress = () => {
+    if (slotTouchTimerRef.current) {
+      clearTimeout(slotTouchTimerRef.current);
+      slotTouchTimerRef.current = null;
+    }
+  };
+
   const [activeMobileDay, setActiveMobileDay] = useState(() => {
     const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
     const todayName = dayNames[new Date().getDay()];
@@ -260,6 +283,9 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
               key={slot.id} 
               className={`time-slot color-${slot.color || 'gray'} ${isSelected ? 'selected' : ''} ${slot.completed ? 'completed-slot' : ''}`} 
               onClick={(e) => handleSlotClick(e, day, slot)}
+              onTouchStart={() => startSlotLongPress(day, slot)}
+              onTouchEnd={cancelSlotLongPress}
+              onTouchMove={cancelSlotLongPress}
               draggable
               onDragStart={(e) => handleDragStart(e, day, slot)}
               onDragEnd={handleDragEnd}

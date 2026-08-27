@@ -3987,6 +3987,24 @@ body {
     width: 100% !important;
   }
 
+  .multi-select-bar {
+    position: fixed !important;
+    bottom: 80px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 92% !important;
+    max-width: 480px !important;
+    background: #1e293b !important;
+    color: #ffffff !important;
+    padding: 0.75rem 0.9rem !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35) !important;
+    z-index: 1060 !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+  }
+
   /* COURSE DETAILS MOBILE RESPONSIVE CARDS */
   .course-tabs-bar {
     width: 100% !important;

@@ -366,6 +366,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
 
     schedule[assignForm.day] = [...daySlots, newSlot];
     await saveScheduleForWeek(assignForm.weekId, schedule);
+    if (onDataChange) onDataChange();
 
     const targetWeekObj = weeks.find(w => w.id === assignForm.weekId);
     alert(`✓ "${selectedTopicForAssign.title}" konusu ${targetWeekObj?.name} - ${assignForm.day} gününe eklendi!`);
