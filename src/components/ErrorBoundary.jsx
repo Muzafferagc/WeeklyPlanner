@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          height: '100vh',
+          minHeight: '100vh',
           fontFamily: 'sans-serif',
           padding: '2rem',
           textAlign: 'center',
@@ -37,12 +37,28 @@ class ErrorBoundary extends React.Component {
           color: '#1e293b'
         }}>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>⚠️ Bir Yükleme Hatası Oluştu</h2>
-          <p style={{ maxWidth: '500px', lineHeight: 1.5, color: '#64748b', margin: '0.8rem 0 1.2rem 0' }}>
-            Uygulama yüklenirken bir çalışma hatası meydana geldi. Aşağıdaki butona basarak uygulamayı sıfırlayıp yeniden başlatabilirsiniz.
+          <p style={{ maxWidth: '600px', lineHeight: 1.5, color: '#64748b', margin: '0.8rem 0 1.2rem 0' }}>
+            Uygulama yüklenirken aşağıdaki hata meydana geldi:
           </p>
+          <pre style={{
+            background: '#1e293b',
+            color: '#f8fafc',
+            padding: '1rem',
+            borderRadius: '8px',
+            textAlign: 'left',
+            maxWidth: '700px',
+            width: '100%',
+            overflowX: 'auto',
+            fontSize: '0.85rem'
+          }}>
+            {this.state.error ? this.state.error.toString() : 'Bilinmeyen Hata'}
+            {'\n'}
+            {this.state.error?.stack ? this.state.error.stack : ''}
+          </pre>
           <button
             onClick={this.handleReset}
             style={{
+              marginTop: '1.5rem',
               padding: '0.85rem 1.75rem',
               borderRadius: '10px',
               background: '#2563eb',

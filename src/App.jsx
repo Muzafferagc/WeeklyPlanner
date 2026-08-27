@@ -325,7 +325,10 @@ function App() {
   if (SMART_LISTS[activeTab]) {
     currentListObj = SMART_LISTS[activeTab];
   } else if (activeTab !== 'schedule' && activeTab !== 'details') {
-    currentListObj = customLists.find(l => l.id === activeTab) || customLists[0];
+    currentListObj = customLists.find(l => l.id === activeTab) || customLists[0] || SMART_LISTS.smart_all;
+  }
+  if (!currentListObj) {
+    currentListObj = SMART_LISTS.smart_all;
   }
 
   return (

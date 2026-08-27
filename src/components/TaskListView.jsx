@@ -169,12 +169,12 @@ const TaskListView = ({
   };
 
   const handleRenameListPrompt = () => {
-    if (!currentList || currentList.id.startsWith('smart_')) return;
+    if (!currentList || !currentList.id || currentList.id.startsWith('smart_')) return;
     setDialog({ type: 'renameList', isOpen: true });
   };
 
   const handleDeleteListPrompt = () => {
-    if (!currentList || currentList.id.startsWith('smart_')) return;
+    if (!currentList || !currentList.id || currentList.id.startsWith('smart_')) return;
     setDialog({ type: 'deleteList', isOpen: true });
   };
 
@@ -206,7 +206,7 @@ const TaskListView = ({
             <span className="task-header-count">({filteredTasks.length})</span>
           </h1>
 
-          {!currentList?.id.startsWith('smart_') && !currentList?.isDefault && (
+          {!currentList?.id?.startsWith('smart_') && !currentList?.isDefault && (
             <div className="task-header-actions">
               <button 
                 type="button" 
