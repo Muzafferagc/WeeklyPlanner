@@ -1,7 +1,7 @@
-// --- RESTFUL CLOUD REALTIME SYNC SERVICE ---
+// --- SUPABASE REALTIME CLOUD SYNC SERVICE ---
+import { getSupabaseClient, getSupabaseConfig, setSupabaseConfig } from './supabaseClient';
 
-const CLOUD_OBJECT_ID = 'ff8081819ff5b11001a0411673852db9';
-const API_URL = `https://api.restful-api.dev/objects/${CLOUD_OBJECT_ID}`;
+export { getSupabaseConfig, setSupabaseConfig };
 
 export const getSyncRoom = () => {
   return 'MUZAFFER-PLAN-2026';
@@ -13,47 +13,67 @@ export const setSyncRoom = (roomId) => {
 
 export const fetchCloudState = async () => {
   try {
-    const res = await fetch(API_URL);
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (json && json.data && typeof json.data === 'object' && Array.isArray(json.data.weeks)) {
-      return json.data;
+    const supabase = getSupabaseClient();
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+      .from('sync_data')
+      .select('data')
+      .eq('id', 'MUZAFFER-PLAN-2026')
+      .single();
+
+    if (error || !data) return null;
+    if (data.data && typeof data.data === 'object' && Array.isArray(data.data.weeks)) {
+      return data.data;
     }
   } catch (e) {}
   return null;
 };
 
-let activePollInterval = null;
+let realtimeChannel = null;
 
 export const subscribeToCloudSync = async (roomId, onDataReceived) => {
-  if (activePollInterval) {
-    clearInterval(activePollInterval);
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+
+  // 1. Initial Fetch
+  const initial = await fetchCloudState();
+  if (initial) {
+    onDataReceived(initial);
   }
 
-  // 1. Initial Fetch on Connect
-  const initialData = await fetchCloudState();
-  if (initialData) {
-    onDataReceived(initialData);
+  // 2. Setup Supabase Realtime WebSocket Listener
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel);
   }
 
-  // 2. Poll every 2.5 seconds
-  activePollInterval = setInterval(async () => {
-    const data = await fetchCloudState();
-    if (data) {
-      onDataReceived(data);
-    }
-  }, 2500);
+  try {
+    realtimeChannel = supabase
+      .channel('public:sync_data')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sync_data', filter: 'id=eq.MUZAFFER-PLAN-2026' },
+        (payload) => {
+          if (payload.new && payload.new.data && Array.isArray(payload.new.data.weeks)) {
+            onDataReceived(payload.new.data);
+          }
+        }
+      )
+      .subscribe();
+  } catch (e) {}
 };
 
 export const broadcastToCloud = async (roomId, fullState) => {
   try {
-    await fetch(API_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'MUZAFFER-PLAN-2026',
-        data: fullState
-      })
-    });
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    await supabase
+      .from('sync_data')
+      .upsert({
+        id: 'MUZAFFER-PLAN-2026',
+        data: fullState,
+        updated_at: new Date().toISOString()
+      });
   } catch (err) {}
 };

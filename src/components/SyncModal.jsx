@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Smartphone, QrCode, Wifi, Copy, Check, X, RefreshCw } from 'lucide-react';
-import { getSyncRoom, setSyncRoom } from '../utils/syncService';
+import { Smartphone, QrCode, Wifi, Copy, Check, X, Database, Key } from 'lucide-react';
+import { getSyncRoom, setSyncRoom, getSupabaseConfig, setSupabaseConfig } from '../utils/syncService';
 
 const SyncModal = ({ isOpen, onClose, onRoomChanged }) => {
   const [roomInput, setRoomInput] = useState(getSyncRoom());
   const [copied, setCopied] = useState(false);
+  
+  const currentSupabase = getSupabaseConfig();
+  const [supabaseUrlInput, setSupabaseUrlInput] = useState(currentSupabase.url);
+  const [supabaseKeyInput, setSupabaseKeyInput] = useState(currentSupabase.key);
 
   if (!isOpen) return null;
 
   const currentRoom = getSyncRoom();
   
-  // Build URL with ?room= parameter (fallback to web address if running locally via file://)
+  // Build URL with ?room= parameter
   let baseUrl = `${window.location.origin}${window.location.pathname}`;
   if (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null') {
     baseUrl = 'https://muzafferagc.github.io/WeeklyPlanner/';
@@ -26,6 +30,13 @@ const SyncModal = ({ isOpen, onClose, onRoomChanged }) => {
     alert(`✓ Senkronizasyon Odası '${newRoom}' olarak güncellendi!`);
   };
 
+  const handleSaveSupabase = (e) => {
+    e.preventDefault();
+    setSupabaseConfig(supabaseUrlInput, supabaseKeyInput);
+    alert("✓ Supabase Bulut Veritabanı bilgileri kaydedildi! Sayfa yenileniyor...");
+    window.location.reload();
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -37,8 +48,8 @@ const SyncModal = ({ isOpen, onClose, onRoomChanged }) => {
       <div className="sync-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="sync-modal-header">
           <div className="sync-title-box">
-            <Smartphone className="text-primary" size={24} />
-            <h2>Mobil & Cihaz Senkronizasyonu</h2>
+            <Database className="text-primary" size={24} />
+            <h2>Supabase Realtime Senkronizasyon</h2>
           </div>
           <button type="button" className="task-detail-close-btn" onClick={onClose}>
             <X size={20} />
@@ -46,61 +57,63 @@ const SyncModal = ({ isOpen, onClose, onRoomChanged }) => {
         </div>
 
         <div className="sync-modal-body">
-          {/* LIVE STATUS BANNER */}
-          <div className="sync-status-banner">
-            <Wifi size={18} className="wifi-icon" />
-            <span>Canlı Senkronizasyon Oda Kodu: <strong>{currentRoom}</strong></span>
-          </div>
+          {/* SUPABASE CONFIG FORM */}
+          <form onSubmit={handleSaveSupabase} className="sync-room-form" style={{ background: '#f1f5f9', padding: '1rem', borderRadius: '12px' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Database size={18} className="text-primary" /> Supabase Veritabanı Bilgileri
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700 }}>Supabase Project URL:</label>
+                <input
+                  type="text"
+                  value={supabaseUrlInput}
+                  onChange={(e) => setSupabaseUrlInput(e.target.value)}
+                  className="sync-room-input"
+                  style={{ width: '100%', marginTop: '3px' }}
+                  placeholder="https://xxxx.supabase.co"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700 }}>Supabase Anon Public Key:</label>
+                <input
+                  type="text"
+                  value={supabaseKeyInput}
+                  onChange={(e) => setSupabaseKeyInput(e.target.value)}
+                  className="sync-room-input"
+                  style={{ width: '100%', marginTop: '3px', fontSize: '0.8rem' }}
+                  placeholder="eyJhbGciOi..."
+                />
+              </div>
+
+              <button type="submit" className="sync-save-btn" style={{ width: '100%', marginTop: '4px' }}>
+                Supabase Bilgilerini Kaydet
+              </button>
+            </div>
+          </form>
 
           {/* QR CODE DISPLAY */}
-          <div className="qr-code-wrapper">
+          <div className="qr-code-wrapper" style={{ marginTop: '1rem' }}>
             <div className="qr-code-box">
               <QRCodeSVG 
                 value={shareUrl} 
-                size={180}
+                size={160}
                 bgColor="#ffffff"
                 fgColor="#1e293b"
                 level="M"
               />
             </div>
             <p className="qr-hint">
-              📱 <strong>Telefonunuzun Kamerasıyla Okutun:</strong> QR kodu taradığınızda telefonunuz doğrudan canlı senkronize odaya bağlanır. Sadece 1 kez okutmanız yeterlidir!
+              📱 <strong>Telefonunuzdan QR Kodu Okutun:</strong> Supabase ayarlarınız kaydedildiğinde telefonunuz doğrudan bu odaya bağlanır.
             </p>
           </div>
 
-          {/* COPY LINK AND CUSTOM ROOM */}
           <div className="sync-action-box">
             <button type="button" className="sync-copy-btn" onClick={handleCopyLink}>
               {copied ? <Check size={18} /> : <Copy size={18} />}
               <span>{copied ? 'Link Kopyalandı!' : 'Mobil Linkini Kopyala'}</span>
             </button>
-          </div>
-
-          {/* CUSTOM ROOM FORM */}
-          <form onSubmit={handleSaveRoom} className="sync-room-form">
-            <label>Özel Oda Kodu Belirle:</label>
-            <div className="sync-room-input-row">
-              <input
-                type="text"
-                value={roomInput}
-                onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
-                className="sync-room-input"
-                placeholder="Örn: MUZAFFER-2026"
-              />
-              <button type="submit" className="sync-save-btn">
-                Değiştir
-              </button>
-            </div>
-          </form>
-
-          {/* PWA INSTALL INSTRUCTIONS */}
-          <div className="pwa-instructions">
-            <h4>💡 Telefonda Uygulamaya Dönüştürme (Ana Ekrana Ekle):</h4>
-            <ol>
-              <li>Telefonunuzda linki açtıktan sonra tarayıcı menüsünü açın.</li>
-              <li><strong>"Ana Ekrana Ekle" (Add to Home Screen)</strong> seçeneğine basın.</li>
-              <li>Uygulama simgesi telefonunuzun ekranına gelecektir!</li>
-            </ol>
           </div>
         </div>
       </div>
