@@ -240,6 +240,289 @@ export const saveCourseDetailsData = async (data) => {
 };
 
 
+
+// --- MS TO-DO STYLE CUSTOM LISTS AND TASKS STORAGE ---
+
+export const initialCustomLists = [
+  { id: 'list_alinacaklar', name: 'Alınacaklar', icon: 'ShoppingCart', isDefault: true },
+  { id: 'list_gunluk', name: 'Günlük Yapılacaklar', icon: 'CheckSquare', isDefault: true },
+  { id: 'list_hafiza', name: 'HAFIZA', icon: 'Brain', isDefault: true },
+  { id: 'list_projeler', name: 'Projeler', icon: 'Folder', isDefault: true },
+  { id: 'list_planlar', name: 'Planlar', icon: 'Compass', isDefault: true },
+  { id: 'list_yillik_hedefler', name: 'YILLIK HEDEFLER 2026-2027', icon: 'Target', isDefault: true },
+  { id: 'list_odevler', name: 'Ödevler', icon: 'BookMarked', isDefault: true },
+  { id: 'list_programlanan', name: 'Programlanan İşler', icon: 'ListTodo', isDefault: true },
+  { id: 'list_birikimler', name: 'Birikimler', icon: 'PiggyBank', isDefault: true }
+];
+
+export const initialCustomTasks = [
+  {
+    id: 'task_1',
+    listId: 'list_programlanan',
+    title: 'Cumartesi Pazar 1 er saat Almanca',
+    note: '',
+    dueDate: '2026-08-29',
+    dueDateLabel: '29 Ağustos Cmt',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_2',
+    listId: 'list_programlanan',
+    title: 'Cumartesi Pazar esnek şekilde Trading eğitimi , backtestler , stratejiler ve MLOps veya JAVA esnek çalışma . Ödev varsa ödev. Projeler üretme , geliştirme , planlama , tasarlama , uygulama vs.',
+    note: '',
+    dueDate: '2026-08-29',
+    dueDateLabel: '29 Ağustos Cmt',
+    completed: false,
+    starred: true,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_3',
+    listId: 'list_programlanan',
+    title: '19.30-20.30 MLOps CUMA',
+    note: '',
+    dueDate: '2026-08-28',
+    dueDateLabel: 'Yarın',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_4',
+    listId: 'list_programlanan',
+    title: '17.00-19.00 Statistical inference CUMA',
+    note: '',
+    dueDate: '2026-08-28',
+    dueDateLabel: 'Yarın',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_5',
+    listId: 'list_programlanan',
+    title: 'Trading eğitim 18.00-19.00',
+    note: '',
+    dueDate: '2026-08-27',
+    dueDateLabel: 'Bugün',
+    completed: false,
+    starred: true,
+    inMyDay: true,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_6',
+    listId: 'list_programlanan',
+    title: '19.00-20.00 JAVA',
+    note: '',
+    dueDate: '2026-09-02',
+    dueDateLabel: '2 Eylül Çar',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_7',
+    listId: 'list_programlanan',
+    title: '17.00-19.00 Data Structures ÇRŞ',
+    note: '',
+    dueDate: '2026-09-02',
+    dueDateLabel: '2 Eylül Çar',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_8',
+    listId: 'list_programlanan',
+    title: '18.00-19.30 OOP and Desing SALI',
+    note: '',
+    dueDate: '2026-09-01',
+    dueDateLabel: '1 Eylül Sal',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_9',
+    listId: 'list_programlanan',
+    title: '11.00-12.30 JAVA OOP Tekrar SALI',
+    note: '',
+    dueDate: '2026-09-01',
+    dueDateLabel: '1 Eylül Sal',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_10',
+    listId: 'list_programlanan',
+    title: '23.30 veya 00.00 uyku PZT',
+    note: '',
+    dueDate: '2026-08-27',
+    dueDateLabel: 'Bugün',
+    completed: false,
+    starred: false,
+    inMyDay: true,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_11',
+    listId: 'list_programlanan',
+    title: '20.30-22.00 Discrete mat PZT',
+    note: '',
+    dueDate: '2026-08-31',
+    dueDateLabel: '31 Ağustos Pzt',
+    completed: false,
+    starred: false,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'task_12',
+    listId: 'list_programlanan',
+    title: '11.30-13.00 MLOps zamanı PZT',
+    note: '',
+    dueDate: '2026-08-31',
+    dueDateLabel: '31 Ağustos Pzt',
+    completed: false,
+    starred: true,
+    inMyDay: false,
+    recurring: true,
+    createdAt: new Date().toISOString()
+  }
+];
+
+export const getCustomLists = async () => {
+  let lists = await localforage.getItem('custom_lists');
+  if (!lists || !Array.isArray(lists) || lists.length === 0) {
+    lists = JSON.parse(JSON.stringify(initialCustomLists));
+    await localforage.setItem('custom_lists', lists);
+  }
+  return lists;
+};
+
+export const saveCustomLists = async (lists) => {
+  await localforage.setItem('custom_lists', lists);
+};
+
+export const createCustomList = async (name, icon = 'List') => {
+  const lists = await getCustomLists();
+  const newList = {
+    id: `list_${generateId()}`,
+    name: name.trim(),
+    icon: icon,
+    isDefault: false,
+    createdAt: new Date().toISOString()
+  };
+  const updatedLists = [...lists, newList];
+  await saveCustomLists(updatedLists);
+  return updatedLists;
+};
+
+export const renameCustomList = async (listId, newName) => {
+  const lists = await getCustomLists();
+  const updatedLists = lists.map(l => l.id === listId ? { ...l, name: newName.trim() } : l);
+  await saveCustomLists(updatedLists);
+  return updatedLists;
+};
+
+export const deleteCustomList = async (listId) => {
+  const lists = await getCustomLists();
+  const updatedLists = lists.filter(l => l.id !== listId);
+  await saveCustomLists(updatedLists);
+
+  // Also remove tasks associated with this list
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.filter(t => t.listId !== listId);
+  await saveCustomTasks(updatedTasks);
+  return updatedLists;
+};
+
+export const getCustomTasks = async () => {
+  let tasks = await localforage.getItem('custom_tasks');
+  if (!tasks || !Array.isArray(tasks)) {
+    tasks = JSON.parse(JSON.stringify(initialCustomTasks));
+    await localforage.setItem('custom_tasks', tasks);
+  }
+  return tasks;
+};
+
+export const saveCustomTasks = async (tasks) => {
+  await localforage.setItem('custom_tasks', tasks);
+};
+
+export const addCustomTask = async (taskData) => {
+  const tasks = await getCustomTasks();
+  const newTask = {
+    id: `task_${generateId()}`,
+    listId: taskData.listId || 'list_programlanan',
+    title: taskData.title,
+    note: taskData.note || '',
+    dueDate: taskData.dueDate || '',
+    dueDateLabel: taskData.dueDateLabel || '',
+    completed: false,
+    starred: taskData.starred || false,
+    inMyDay: taskData.inMyDay || false,
+    recurring: taskData.recurring || false,
+    steps: taskData.steps || [],
+    createdAt: new Date().toISOString()
+  };
+  const updatedTasks = [newTask, ...tasks];
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+export const updateCustomTask = async (taskId, updates) => {
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+export const deleteCustomTask = async (taskId) => {
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.filter(t => t.id !== taskId);
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+export const toggleTaskStar = async (taskId) => {
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, starred: !t.starred } : t);
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+export const toggleTaskComplete = async (taskId) => {
+  const tasks = await getCustomTasks();
+  const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
+  await saveCustomTasks(updatedTasks);
+  return updatedTasks;
+};
+
+
 export const exportData = async (weekIds = null, activeWeekId = null) => {
   let weeks = await getWeeks();
   if (weekIds && weekIds.length > 0) {
@@ -248,6 +531,8 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
   weeks = deduplicateWeeks(weeks);
 
   const courseDetailsData = await getCourseDetailsData();
+  const customLists = await getCustomLists();
+  const customTasks = await getCustomTasks();
 
   const data = {
     exportedAt: new Date().toISOString(),
@@ -255,7 +540,9 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
     weeks,
     schedules: {},
     customDefaultSchedule: await localforage.getItem('customDefaultSchedule'),
-    courseDetailsData
+    courseDetailsData,
+    customLists,
+    customTasks
   };
 
   for (let w of weeks) {
@@ -272,7 +559,6 @@ export const importData = async (jsonData) => {
 
     const cleanWeeks = deduplicateWeeks(data.weeks);
 
-    // Completely clear existing localforage items to prevent any duplication
     await localforage.clear();
     await localforage.setItem('weeks', cleanWeeks);
 
@@ -282,6 +568,14 @@ export const importData = async (jsonData) => {
 
     if (data.courseDetailsData) {
       await localforage.setItem('course_details_data', data.courseDetailsData);
+    }
+
+    if (data.customLists) {
+      await localforage.setItem('custom_lists', data.customLists);
+    }
+
+    if (data.customTasks) {
+      await localforage.setItem('custom_tasks', data.customTasks);
     }
 
     for (const weekId of Object.keys(data.schedules)) {
@@ -317,4 +611,5 @@ export const updateWeekDate = async (weekId, chosenDateStr) => {
   await localforage.setItem('weeks', weeks);
   return weeks;
 };
+
 

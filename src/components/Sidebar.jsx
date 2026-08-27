@@ -1,11 +1,30 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CalendarDays, Trash2, Edit3, Download, Settings, Search, Filter, BookOpen } from 'lucide-react';
+import { 
+  Plus, CalendarDays, Trash2, Edit3, Download, Settings, Search, Filter, BookOpen,
+  Sun, Star, Calendar, CheckSquare, ListTodo, ShoppingCart, Brain, Folder, Compass,
+  Target, BookMarked, PiggyBank, List, ChevronDown, ChevronRight, User, Share2
+} from 'lucide-react';
 import DialogModal from './DialogModal';
+import { createCustomList } from '../utils/storage';
 
 const MONTH_NAMES = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
 ];
+
+// Map icon string name to Lucide icon component
+const ICON_MAP = {
+  ShoppingCart,
+  CheckSquare,
+  Brain,
+  Folder,
+  Compass,
+  Target,
+  BookMarked,
+  ListTodo,
+  PiggyBank,
+  List
+};
 
 const Sidebar = ({ 
   weeks, 
@@ -17,14 +36,29 @@ const Sidebar = ({
   onMultiDeleteWeeks, 
   onMultiExportWeeks, 
   onOpenDefaultPlanModal,
-  activeTab = 'schedule',
-  onTabChange
+  activeTab = 'list_programlanan',
+  onTabChange,
+  customLists = [],
+  customTasks = [],
+  onRefreshData
 }) => {
   const [selectedWeeks, setSelectedWeeks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
   const [selectedMonth, setSelectedMonth] = useState('ALL');
+  const [showWeeksHistory, setShowWeeksHistory] = useState(false);
   const [dialog, setDialog] = useState({ isOpen: false, type: null, payload: null });
+
+  // Compute Task Counts for Smart Views
+  const myDayCount = useMemo(() => customTasks.filter(t => !t.completed && (t.inMyDay || t.dueDateLabel === 'Bugün')).length, [customTasks]);
+  const importantCount = useMemo(() => customTasks.filter(t => !t.completed && t.starred).length, [customTasks]);
+  const plannedCount = useMemo(() => customTasks.filter(t => !t.completed && (t.dueDate || t.dueDateLabel)).length, [customTasks]);
+  const allTasksCount = useMemo(() => customTasks.filter(t => !t.completed).length, [customTasks]);
+
+  // Compute task count per custom list
+  const getListTaskCount = (listId) => {
+    return customTasks.filter(t => t.listId === listId && !t.completed).length;
+  };
 
   // Chronological Sort: Top = Newest, Bottom = Oldest
   const sortedWeeks = useMemo(() => {
@@ -65,13 +99,8 @@ const Sidebar = ({
     });
   }, [sortedWeeks, searchQuery, selectedYear, selectedMonth]);
 
-  const handleCreate = (e) => {
-    e.preventDefault();
-    onCreateWeek();
-  };
-
   const handleWeekClick = (e, id) => {
-    if (activeTab !== 'schedule' && onTabChange) {
+    if (onTabChange) {
       onTabChange('schedule');
     }
     if (e.ctrlKey || e.metaKey) {
@@ -89,8 +118,15 @@ const Sidebar = ({
     }
   };
 
-  const handleConfirmAction = (inputValue) => {
-    if (dialog.type === 'rename') {
+  const handleCreateNewListPrompt = () => {
+    setDialog({ type: 'newList', isOpen: true });
+  };
+
+  const handleConfirmAction = async (inputValue) => {
+    if (dialog.type === 'newList' && inputValue && inputValue.trim()) {
+      await createCustomList(inputValue.trim());
+      if (onRefreshData) onRefreshData();
+    } else if (dialog.type === 'rename') {
       if (inputValue && inputValue.trim()) {
         onRenameWeek(dialog.payload.id, inputValue.trim());
       }
@@ -100,22 +136,30 @@ const Sidebar = ({
       onMultiDeleteWeeks(selectedWeeks);
       setSelectedWeeks([]);
     }
-    setDialog({ isOpen: false });
+    setDialog({ isOpen: false, type: null, payload: null });
   };
 
   const getDialogProps = () => {
-    if (dialog.type === 'rename') {
+    if (dialog.type === 'newList') {
+      return {
+        title: "Yeni Liste Oluştur",
+        message: "Oluşturmak istediğiniz listenin adını girin:",
+        type: "prompt",
+        defaultValue: "",
+        confirmText: "Oluştur"
+      };
+    } else if (dialog.type === 'rename') {
       return {
         title: "Yeniden Adlandır",
         message: "Yeni hafta ismini girin:",
         type: "prompt",
-        defaultValue: dialog.payload.name,
+        defaultValue: dialog.payload?.name || "",
         confirmText: "Kaydet"
       };
     } else if (dialog.type === 'singleDelete') {
       return {
         title: "Haftayı Sil",
-        message: `'${dialog.payload.name}' silinecek. Emin misiniz?`,
+        message: `'${dialog.payload?.name}' silinecek. Emin misiniz?`,
         confirmText: "Evet, Sil"
       };
     } else if (dialog.type === 'multiDelete') {
@@ -130,150 +174,218 @@ const Sidebar = ({
 
   return (
     <div className="sidebar no-print">
-      {/* MAIN VIEW NAVIGATION TABS */}
-      <div className="sidebar-main-tabs">
+      {/* SMART SYSTEM CATEGORIES (MS To-Do Top Items) */}
+      <div className="sidebar-section smart-views-section">
         <button 
-          className={`sidebar-tab-btn ${activeTab === 'schedule' ? 'active' : ''}`}
+          className={`sidebar-nav-item ${activeTab === 'smart_myday' ? 'active' : ''}`}
+          onClick={() => onTabChange && onTabChange('smart_myday')}
+        >
+          <div className="nav-item-left">
+            <Sun size={18} className="icon-myday" />
+            <span>Günüm</span>
+          </div>
+          {myDayCount > 0 && <span className="nav-badge">{myDayCount}</span>}
+        </button>
+
+        <button 
+          className={`sidebar-nav-item ${activeTab === 'smart_important' ? 'active' : ''}`}
+          onClick={() => onTabChange && onTabChange('smart_important')}
+        >
+          <div className="nav-item-left">
+            <Star size={18} className="icon-important" />
+            <span>Önemli</span>
+          </div>
+          {importantCount > 0 && <span className="nav-badge">{importantCount}</span>}
+        </button>
+
+        <button 
+          className={`sidebar-nav-item ${activeTab === 'smart_planned' ? 'active' : ''}`}
+          onClick={() => onTabChange && onTabChange('smart_planned')}
+        >
+          <div className="nav-item-left">
+            <Calendar size={18} className="icon-planned" />
+            <span>Planlanan</span>
+          </div>
+          {plannedCount > 0 && <span className="nav-badge">{plannedCount}</span>}
+        </button>
+
+        <button 
+          className={`sidebar-nav-item ${activeTab === 'smart_all' ? 'active' : ''}`}
+          onClick={() => onTabChange && onTabChange('smart_all')}
+        >
+          <div className="nav-item-left">
+            <CheckSquare size={18} className="icon-tasks" />
+            <span>Görevler & Notlar</span>
+          </div>
+          {allTasksCount > 0 && <span className="nav-badge">{allTasksCount}</span>}
+        </button>
+
+        <button 
+          className={`sidebar-nav-item ${activeTab === 'schedule' ? 'active' : ''}`}
           onClick={() => onTabChange && onTabChange('schedule')}
         >
-          <CalendarDays size={18} />
-          <span>Haftalık Planım</span>
+          <div className="nav-item-left">
+            <CalendarDays size={18} className="icon-schedule" />
+            <span>Haftalık Planım (Tablo)</span>
+          </div>
         </button>
+
         <button 
-          className={`sidebar-tab-btn ${activeTab === 'details' ? 'active' : ''}`}
+          className={`sidebar-nav-item ${activeTab === 'details' ? 'active' : ''}`}
           onClick={() => onTabChange && onTabChange('details')}
         >
-          <BookOpen size={18} />
-          <span>Ders Detayları</span>
+          <div className="nav-item-left">
+            <BookOpen size={18} className="icon-details" />
+            <span>Ders Detayları & Müfredat</span>
+          </div>
         </button>
       </div>
 
-      <div className="sidebar-header">
-        <CalendarDays className="text-primary" size={20} />
-        <h2>Haftalar ({filteredWeeks.length})</h2>
-      </div>
+      <div className="sidebar-divider" />
 
-      {/* SEARCH AND FILTER CONTROLS */}
-      <div className="sidebar-filter-container">
-        <div className="search-box">
-          <Search size={14} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Hafta ara (örn: Eylül)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="sidebar-search-input"
-          />
-        </div>
+      {/* CUSTOM USER LISTS */}
+      <div className="sidebar-section custom-lists-section">
+        {customLists.map(list => {
+          const IconComp = ICON_MAP[list.icon] || List;
+          const count = getListTaskCount(list.id);
+          const isActive = activeTab === list.id;
 
-        <div className="filters-row">
-          <select 
-            value={selectedMonth} 
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="sidebar-filter-select"
-            title="Aya Göre Filtrele"
-          >
-            <option value="ALL">Tüm Aylar</option>
-            {MONTH_NAMES.map((m, idx) => (
-              <option key={m} value={idx}>{m}</option>
-            ))}
-          </select>
-
-          {availableYears.length > 0 && (
-            <select 
-              value={selectedYear} 
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="sidebar-filter-select"
-              title="Yıla Göre Filtrele"
-            >
-              <option value="ALL">Tüm Yıllar</option>
-              {availableYears.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-      
-      {/* WEEKS LIST - Top: Newest, Bottom: Oldest */}
-      <div className="weeks-list">
-        {filteredWeeks.map((week) => {
-          const isSelected = selectedWeeks.includes(week.id);
           return (
-          <div 
-            key={week.id} 
-            className={`week-item ${week.id === currentWeekId && selectedWeeks.length === 0 ? 'active' : ''} ${isSelected ? 'selected' : ''}`}
-            onClick={(e) => handleWeekClick(e, week.id)}
-          >
-            <span className="week-name">{week.name}</span>
-            <div className="week-actions">
-              <button 
-                className="week-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDialog({ isOpen: true, type: 'rename', payload: { id: week.id, name: week.name }});
-                }}
-                title="Yeniden Adlandır"
-              >
-                <Edit3 size={14} />
-              </button>
-              {weeks.length > 1 && (
-                <button 
-                  className="week-action-btn delete-btn-sidebar"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDialog({ isOpen: true, type: 'singleDelete', payload: { id: week.id, name: week.name }});
-                  }}
-                  title="Sil"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
+            <button
+              key={list.id}
+              className={`sidebar-nav-item custom-list-item ${isActive ? 'active' : ''}`}
+              onClick={() => onTabChange && onTabChange(list.id)}
+            >
+              <div className="nav-item-left">
+                <IconComp size={18} className="custom-list-icon" />
+                <span className="custom-list-name">{list.name}</span>
+              </div>
+              {count > 0 && <span className="nav-badge">{count}</span>}
+            </button>
+          );
+        })}
+
+        {/* ADD NEW LIST BUTTON */}
+        <button 
+          type="button" 
+          className="sidebar-add-list-btn"
+          onClick={handleCreateNewListPrompt}
+        >
+          <Plus size={18} />
+          <span>Yeni liste</span>
+        </button>
+      </div>
+
+      <div className="sidebar-divider" />
+
+      {/* HISTORICAL WEEKS ACCORDION */}
+      <div className="sidebar-section weeks-history-section">
+        <button 
+          type="button"
+          className="weeks-history-toggle"
+          onClick={() => setShowWeeksHistory(!showWeeksHistory)}
+        >
+          <div className="nav-item-left">
+            <CalendarDays size={16} />
+            <span>Geçmiş Haftalık Tablolar ({weeks.length})</span>
           </div>
-        )})}
-        {filteredWeeks.length === 0 && (
-          <div className="empty-filter-state">
-            Aranan kritere uygun hafta bulunamadı.
+          {showWeeksHistory ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+
+        {showWeeksHistory && (
+          <div className="weeks-history-content">
+            <div className="sidebar-filter-container">
+              <div className="search-box">
+                <Search size={14} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Hafta ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="sidebar-search-input"
+                />
+              </div>
+
+              <div className="filters-row">
+                <select 
+                  value={selectedMonth} 
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="sidebar-filter-select"
+                >
+                  <option value="ALL">Tüm Aylar</option>
+                  {MONTH_NAMES.map((m, idx) => (
+                    <option key={m} value={idx}>{m}</option>
+                  ))}
+                </select>
+
+                {availableYears.length > 0 && (
+                  <select 
+                    value={selectedYear} 
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="sidebar-filter-select"
+                  >
+                    <option value="ALL">Tüm Yıllar</option>
+                    {availableYears.map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <div className="weeks-list">
+              {filteredWeeks.map((week) => {
+                const isSelected = selectedWeeks.includes(week.id);
+                return (
+                  <div 
+                    key={week.id} 
+                    className={`week-item ${week.id === currentWeekId && activeTab === 'schedule' ? 'active' : ''} ${isSelected ? 'selected' : ''}`}
+                    onClick={(e) => handleWeekClick(e, week.id)}
+                  >
+                    <span className="week-name">{week.name}</span>
+                    <div className="week-actions">
+                      <button 
+                        className="week-action-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDialog({ isOpen: true, type: 'rename', payload: { id: week.id, name: week.name }});
+                        }}
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      {weeks.length > 1 && (
+                        <button 
+                          className="week-action-btn delete-btn-sidebar"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDialog({ isOpen: true, type: 'singleDelete', payload: { id: week.id, name: week.name }});
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button className="new-week-btn" onClick={onCreateWeek}>
+              <Plus size={16} /> Yeni Hafta Oluştur
+            </button>
           </div>
         )}
       </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.5rem 0' }}>
-        <button className="new-week-btn no-print" onClick={handleCreate}>
-          <Plus size={18} />
-          Yeni Hafta Ekle
-        </button>
-
-        <button 
-          className="btn-secondary default-plan-trigger-btn"
-          onClick={onOpenDefaultPlanModal}
-          title="Varsayılan haftalık plan şablonunu düzenleyin"
-        >
-          <Settings size={16} /> Varsayılan Planı Düzenle
-        </button>
-      </div>
-
-      {selectedWeeks.length > 0 && (
-        <div style={{ padding: '1rem', background: 'var(--input-bg)', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', textAlign: 'center' }}>{selectedWeeks.length} Hafta Seçildi</span>
-          <button className="btn-secondary" onClick={() => { onMultiExportWeeks(selectedWeeks); setSelectedWeeks([]); }} style={{ width: '100%', justifyContent: 'center' }}>
-            <Download size={14} /> Yedekle
-          </button>
-          <button className="btn-secondary" onClick={() => setDialog({ isOpen: true, type: 'multiDelete' })} style={{ width: '100%', justifyContent: 'center', color: '#ef4444' }}>
-            <Trash2 size={14} /> Sil
-          </button>
-        </div>
-      )}
 
       <DialogModal 
         isOpen={dialog.isOpen}
         {...getDialogProps()}
         onConfirm={handleConfirmAction}
-        onCancel={() => setDialog({ isOpen: false })}
+        onCancel={() => setDialog({ isOpen: false, type: null, payload: null })}
       />
     </div>
   );
 };
 
 export default Sidebar;
+
