@@ -18,16 +18,20 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
   const [dragOverDay, setDragOverDay] = useState(null);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const slotTouchTimerRef = React.useRef(null);
 
   const startSlotLongPress = (day, slot) => {
     slotTouchTimerRef.current = setTimeout(() => {
       if (navigator.vibrate) navigator.vibrate(40);
+      setIsSelectMode(true);
       setSelectedSlots(prev => {
         const exists = prev.find(s => s.id === slot.id);
         if (exists) {
-          return prev.filter(s => s.id !== slot.id);
+          const next = prev.filter(s => s.id !== slot.id);
+          if (next.length === 0) setIsSelectMode(false);
+          return next;
         } else {
           return [...prev, { day, id: slot.id }];
         }
@@ -158,6 +162,7 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
     });
     await handleSaveSchedule(newSchedule);
     setSelectedSlots([]);
+    setIsSelectMode(false);
     
     if (isComplete) {
       confetti({
@@ -176,23 +181,23 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
     });
     await handleSaveSchedule(newSchedule);
     setSelectedSlots([]);
+    setIsSelectMode(false);
   };
 
   const handleSlotClick = (e, day, slot) => {
-    if (e.ctrlKey || e.metaKey) {
+    if (isSelectMode || selectedSlots.length > 0 || (e && (e.ctrlKey || e.metaKey || e.shiftKey))) {
+      if (!isSelectMode) setIsSelectMode(true);
       const exists = selectedSlots.find(s => s.id === slot.id);
       if (exists) {
-        setSelectedSlots(selectedSlots.filter(s => s.id !== slot.id));
+        const next = selectedSlots.filter(s => s.id !== slot.id);
+        setSelectedSlots(next);
+        if (next.length === 0) setIsSelectMode(false);
       } else {
-        setSelectedSlots([...selectedSlots, { day, id: slot.id }]);
+        setSelectedSlots(prev => [...prev, { day, id: slot.id }]);
       }
     } else {
-      if (selectedSlots.length > 0) {
-        setSelectedSlots([]);
-      } else {
-        setEditingSlot(slot);
-        setEditingDay(day);
-      }
+      setEditingSlot(slot);
+      setEditingDay(day);
     }
   };
 
@@ -403,23 +408,35 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
 
       {selectedSlots.length > 0 && (
         <div className="multi-action-bar no-print">
-          <span className="selection-count">{selectedSlots.length} etkinlik seçildi</span>
-          <div className="multi-color-picker" style={{ display: 'flex', gap: '0.25rem', borderRight: '2px solid var(--border-color)', paddingRight: '1rem', marginRight: '0.5rem' }}>
-            {['gray', 'red', 'blue', 'green', 'yellow', 'purple', 'violet', 'orange', 'pink', 'teal', 'lime', 'brown']
-          .map(color => (
-              <div 
-                key={color}
-                className={`color-option color-${color}`}
-                style={{ width: '24px', height: '24px' }}
-                onClick={() => handleMultiColorChange(color)}
-                title="Rengi Değiştir"
-              />
-            ))}
+          <div className="multi-action-top-row">
+            <span className="selection-count">{selectedSlots.length} seçildi</span>
+            <div className="multi-action-top-btns">
+              <button type="button" className="btn-secondary danger-btn" onClick={requestMultiDelete}>
+                <Trash2 size={16} /> Sil
+              </button>
+              <button type="button" className="btn-secondary cancel-btn" onClick={() => { setSelectedSlots([]); setIsSelectMode(false); }}>
+                İptal
+              </button>
+            </div>
           </div>
-          <button className="btn-primary" onClick={() => handleMultiComplete(true)}>Tik At</button>
-          <button className="btn-secondary" onClick={() => handleMultiComplete(false)}>Tiki Kaldır</button>
-          <button className="btn-secondary" style={{color: 'var(--primary)', borderColor: 'var(--primary)'}} onClick={requestMultiDelete}>Sil</button>
-          <button className="btn-secondary" onClick={() => setSelectedSlots([])}>İptal</button>
+
+          <div className="multi-action-bottom-row">
+            <div className="multi-color-picker">
+              {['gray', 'red', 'blue', 'green', 'yellow', 'purple', 'violet', 'orange', 'pink', 'teal', 'lime', 'brown'].map(color => (
+                <div 
+                  key={color}
+                  className={`color-option color-${color}`}
+                  onClick={() => handleMultiColorChange(color)}
+                  title="Rengi Değiştir"
+                />
+              ))}
+            </div>
+
+            <div className="multi-action-check-btns">
+              <button type="button" className="btn-primary" onClick={() => handleMultiComplete(true)}>Tik At</button>
+              <button type="button" className="btn-secondary" onClick={() => handleMultiComplete(false)}>Tiki Kaldır</button>
+            </div>
+          </div>
         </div>
       )}
 
