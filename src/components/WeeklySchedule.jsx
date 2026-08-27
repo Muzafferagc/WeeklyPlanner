@@ -22,6 +22,14 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
   const [isSelectMode, setIsSelectMode] = useState(false);
 
+  const sortedWeeksModal = useMemo(() => {
+    return [...weeks].sort((a, b) => {
+      const dateA = new Date(a.startDate || a.createdAt || 0);
+      const dateB = new Date(b.startDate || b.createdAt || 0);
+      return dateB - dateA;
+    });
+  }, [weeks]);
+
   const isLongPressFiredRef = React.useRef(false);
   const slotTouchTimerRef = React.useRef(null);
 
@@ -261,14 +269,6 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
 
   const WEEK_DAYS_ORDER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
   const days = schedule ? WEEK_DAYS_ORDER.filter(d => schedule[d] !== undefined) : [];
-
-  const sortedWeeksModal = useMemo(() => {
-    return [...weeks].sort((a, b) => {
-      const dateA = new Date(a.startDate || a.createdAt || 0);
-      const dateB = new Date(b.startDate || b.createdAt || 0);
-      return dateB - dateA;
-    });
-  }, [weeks]);
 
   const currentWeekIndex = weeks.findIndex(w => w.id === weekId);
   const currentWeekObj = weeks[currentWeekIndex] || weeks[0];
