@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode } from 'lucide-react';
+import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode, Trash2 } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
 import CourseDetailsView from './components/CourseDetailsView';
 import Sidebar from './components/Sidebar';
