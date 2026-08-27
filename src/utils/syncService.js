@@ -30,15 +30,25 @@ export const setSyncRoom = (roomId) => {
   return cleanRoom;
 };
 
+const extractStatePayload = (raw) => {
+  if (!raw || typeof raw !== 'object') return null;
+  if (raw.weeks && Array.isArray(raw.weeks)) return raw;
+  if (raw.data && typeof raw.data === 'object') {
+    if (raw.data.weeks && Array.isArray(raw.data.weeks)) return raw.data;
+    if (raw.data.data && typeof raw.data.data === 'object' && Array.isArray(raw.data.data.weeks)) {
+      return raw.data.data;
+    }
+  }
+  return null;
+};
+
 export const fetchCloudState = async (roomId) => {
   try {
     const url = `${DEFAULT_FIREBASE_URL}/rooms/${roomId}.json`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const json = await res.json();
-    if (json && json.data && typeof json.data === 'object') {
-      return json.data;
-    }
+    return extractStatePayload(json);
   } catch (e) {}
   return null;
 };
@@ -68,8 +78,9 @@ export const subscribeToCloudSync = async (roomId, onDataReceived) => {
       if (isBroadcasting) return; // Skip echo from own broadcast
       try {
         const payload = JSON.parse(event.data);
-        if (payload && payload.data && typeof payload.data === 'object') {
-          onDataReceived(payload.data);
+        const statePayload = extractStatePayload(payload);
+        if (statePayload) {
+          onDataReceived(statePayload);
         }
       } catch (e) {
         // console.error("Sync Parse error", e);
