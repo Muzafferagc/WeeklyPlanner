@@ -5,9 +5,13 @@ const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 
 export const getSupabaseConfig = () => {
   try {
-    const url = localStorage.getItem('supabase_url') || DEFAULT_SUPABASE_URL;
-    const key = localStorage.getItem('supabase_anon_key') || DEFAULT_SUPABASE_KEY;
-    return { url: url.trim(), key: key.trim() };
+    const url = localStorage.getItem('supabase_url');
+    const key = localStorage.getItem('supabase_anon_key');
+    
+    const cleanUrl = (url && url.trim() && url.trim().length > 10) ? url.trim() : DEFAULT_SUPABASE_URL;
+    const cleanKey = (key && key.trim() && key.trim().length > 20) ? key.trim() : DEFAULT_SUPABASE_KEY;
+    
+    return { url: cleanUrl, key: cleanKey };
   } catch (e) {
     return { url: DEFAULT_SUPABASE_URL, key: DEFAULT_SUPABASE_KEY };
   }
@@ -15,8 +19,11 @@ export const getSupabaseConfig = () => {
 
 export const setSupabaseConfig = (url, key) => {
   try {
-    localStorage.setItem('supabase_url', (url || DEFAULT_SUPABASE_URL).trim());
-    localStorage.setItem('supabase_anon_key', (key || DEFAULT_SUPABASE_KEY).trim());
+    if (url && url.trim()) localStorage.setItem('supabase_url', url.trim());
+    else localStorage.removeItem('supabase_url');
+
+    if (key && key.trim()) localStorage.setItem('supabase_anon_key', key.trim());
+    else localStorage.removeItem('supabase_anon_key');
   } catch (e) {}
 };
 
@@ -26,15 +33,13 @@ let cachedKey = '';
 
 export const getSupabaseClient = () => {
   const { url, key } = getSupabaseConfig();
-  const activeUrl = url || DEFAULT_SUPABASE_URL;
-  const activeKey = key || DEFAULT_SUPABASE_KEY;
 
-  if (!cachedClient || cachedUrl !== activeUrl || cachedKey !== activeKey) {
-    cachedClient = createClient(activeUrl, activeKey, {
+  if (!cachedClient || cachedUrl !== url || cachedKey !== key) {
+    cachedClient = createClient(url, key, {
       auth: { persistSession: false }
     });
-    cachedUrl = activeUrl;
-    cachedKey = activeKey;
+    cachedUrl = url;
+    cachedKey = key;
   }
   return cachedClient;
 };
