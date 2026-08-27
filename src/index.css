@@ -3177,6 +3177,196 @@ body {
   cursor: pointer;
 }
 
+/* SYNC MODAL & BUTTON STYLES */
+.sync-btn-highlight {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  font-weight: 800 !important;
+}
+
+.sync-btn-highlight:hover {
+  background: #1d4ed8 !important;
+  transform: translateY(-1px);
+}
+
+.sync-modal-card {
+  width: 90%;
+  max-width: 500px;
+  margin: auto;
+  background: var(--card-bg, #ffffff);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeInZoom 0.25s ease-out;
+}
+
+[data-theme="dark"] .sync-modal-card {
+  background: #1e293b;
+}
+
+@keyframes fadeInZoom {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.sync-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.85rem;
+}
+
+.sync-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sync-title-box h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.sync-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  font-size: 0.92rem;
+}
+
+[data-theme="dark"] .sync-status-banner {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+}
+
+.qr-code-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.qr-code-box {
+  background: #ffffff;
+  padding: 1rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.qr-hint {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.sync-action-box {
+  display: flex;
+  justify-content: center;
+}
+
+.sync-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sync-copy-btn:hover {
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.sync-room-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.sync-room-form label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.sync-room-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sync-room-input {
+  flex: 1;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.sync-save-btn {
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.pwa-instructions {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .pwa-instructions {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pwa-instructions h4 {
+  margin: 0 0 0.4rem 0;
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.pwa-instructions ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+
 
 
 

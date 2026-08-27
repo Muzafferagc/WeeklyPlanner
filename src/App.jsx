@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays } from 'lucide-react';
+import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
 import CourseDetailsView from './components/CourseDetailsView';
 import Sidebar from './components/Sidebar';
@@ -10,6 +10,7 @@ import DetailedReport from './components/DetailedReport';
 import DialogModal from './components/DialogModal';
 import CopyWeekModal from './components/CopyWeekModal';
 import ChangeWeekDateModal from './components/ChangeWeekDateModal';
+import SyncModal from './components/SyncModal';
 import { Calendar } from 'lucide-react';
 import { 
   getWeeks, 
@@ -25,6 +26,7 @@ import {
   getCustomLists,
   getCustomTasks
 } from './utils/storage';
+import { getSyncRoom, subscribeToCloudSync, broadcastToCloud } from './utils/syncService';
 import confetti from 'canvas-confetti';
 
 const SMART_LISTS = {
@@ -45,11 +47,28 @@ function App() {
   const [defaultPlanModalOpen, setDefaultPlanModalOpen] = useState(false);
   const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null });
 
   useEffect(() => {
     loadApp();
+  }, []);
+
+  useEffect(() => {
+    // Setup Realtime Cloud Sync Listener
+    const room = getSyncRoom();
+    subscribeToCloudSync(room, async (cloudData) => {
+      if (cloudData && typeof cloudData === 'object' && cloudData.weeks) {
+        await importData(JSON.stringify(cloudData));
+        const loadedWeeks = await getWeeks();
+        const loadedLists = await getCustomLists();
+        const loadedTasks = await getCustomTasks();
+        setWeeks(loadedWeeks);
+        setCustomLists(loadedLists);
+        setCustomTasks(loadedTasks);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -65,6 +84,15 @@ function App() {
       updateProgress(currentWeekId);
     }
   }, [currentWeekId]);
+
+  const broadcastCurrentState = async () => {
+    const room = getSyncRoom();
+    const jsonStr = await exportData(null, currentWeekId);
+    try {
+      const dataObj = JSON.parse(jsonStr);
+      await broadcastToCloud(room, dataObj);
+    } catch (e) {}
+  };
 
   const loadApp = async () => {
     const loadedWeeks = await getWeeks();
@@ -91,6 +119,7 @@ function App() {
     const tasks = await getCustomTasks();
     setCustomLists(lists);
     setCustomTasks(tasks);
+    broadcastCurrentState();
   };
 
   const handleCreateWeek = async () => {
@@ -98,6 +127,7 @@ function App() {
     const updatedWeeks = await getWeeks();
     setWeeks(updatedWeeks);
     setCurrentWeekId(newWeek.id);
+    broadcastCurrentState();
   };
 
   const handleDeleteWeek = async (id) => {
@@ -108,6 +138,7 @@ function App() {
       if (currentWeekId === id) {
         setCurrentWeekId(updatedWeeks[0].id);
       }
+      broadcastCurrentState();
     } else {
       alert("Son haftayı silemezsiniz!");
     }
@@ -124,14 +155,13 @@ function App() {
     if (weekIds.includes(currentWeekId)) {
       setCurrentWeekId(updatedWeeks[0].id);
     }
-    if (successCount < weekIds.length) {
-      alert("Bazı haftalar silindi ancak son hafta silinemedi.");
-    }
+    broadcastCurrentState();
   };
 
   const handleRenameWeek = async (id, newName) => {
     const updatedWeeks = await renameWeek(id, newName);
     setWeeks(updatedWeeks);
+    broadcastCurrentState();
   };
 
   const handlePrint = () => {
@@ -203,6 +233,7 @@ function App() {
     const { updateWeekDate } = await import('./utils/storage');
     const updatedWeeks = await updateWeekDate(weekId, chosenDateStr);
     setWeeks(updatedWeeks);
+    broadcastCurrentState();
     alert("✓ Hafta tarihi başarıyla güncellendi!");
   };
 
@@ -217,6 +248,7 @@ function App() {
     const updatedWeeks = await getWeeks();
     setWeeks(updatedWeeks);
     setCurrentWeekId(finalTargetId);
+    broadcastCurrentState();
 
     confetti({
       particleCount: 120,
@@ -346,6 +378,15 @@ function App() {
                 )}
               </div>
               <div className="header-actions">
+                <button 
+                  className="print-btn sync-btn-highlight" 
+                  onClick={() => setSyncModalOpen(true)} 
+                  title="Mobil & Cihaz Senkronizasyonu (QR Kod)"
+                >
+                  <Smartphone size={18} />
+                  <span className="btn-text-responsive">Mobil / QR Bağlan</span>
+                </button>
+
                 {activeTab === 'schedule' && (
                   <>
                     <button 
@@ -408,6 +449,14 @@ function App() {
           /* QUICK GLOBAL TOP BAR FOR TASK LIST VIEWS */
           <div className="top-global-bar no-print">
             <div className="bar-actions-right">
+              <button 
+                className="print-btn sync-btn-highlight" 
+                onClick={() => setSyncModalOpen(true)} 
+                title="Mobil & Cihaz Senkronizasyonu (QR Kod)"
+              >
+                <Smartphone size={18} />
+                <span className="btn-text-responsive">Mobil / QR Bağlan</span>
+              </button>
               <button className="print-btn" onClick={() => setIsDarkMode(!isDarkMode)} title="Gece/Gündüz Modu">
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
@@ -423,7 +472,7 @@ function App() {
 
         <main className="main-content-area">
           {activeTab === 'schedule' && currentWeekId && (
-            <WeeklySchedule key={currentWeekId} weekId={currentWeekId} onScheduleChange={() => updateProgress(currentWeekId)} />
+            <WeeklySchedule key={currentWeekId} weekId={currentWeekId} onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} />
           )}
           {activeTab === 'details' && (
             <CourseDetailsView weeks={weeks} currentWeekId={currentWeekId} />
@@ -448,6 +497,15 @@ function App() {
         confirmText="Evet, Sıfırla"
         onConfirm={handleConfirmReset}
         onCancel={() => setConfirmDialog({ isOpen: false })}
+      />
+
+      <SyncModal
+        isOpen={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
+        onRoomChanged={(newRoom) => {
+          setSyncModalOpen(false);
+          window.location.reload();
+        }}
       />
 
       <DefaultPlanTemplateModal
@@ -479,3 +537,4 @@ function App() {
 }
 
 export default App;
+
