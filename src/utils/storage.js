@@ -356,6 +356,14 @@ export const getCustomTasks = async () => {
   if (!tasks || !Array.isArray(tasks)) {
     tasks = [];
     await localforage.setItem('custom_tasks', tasks);
+  } else {
+    // Purge old sample tasks if they still linger in localforage
+    const sampleIds = ['task_1', 'task_2', 'task_3', 'task_4', 'task_5', 'task_6', 'task_7', 'task_8', 'task_9', 'task_10', 'task_11', 'task_12'];
+    const cleaned = tasks.filter(t => !sampleIds.includes(t.id));
+    if (cleaned.length !== tasks.length) {
+      tasks = cleaned;
+      await localforage.setItem('custom_tasks', tasks);
+    }
   }
   return tasks;
 };

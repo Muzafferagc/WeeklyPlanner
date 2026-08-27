@@ -103,14 +103,15 @@ const TaskListView = ({
     }
   };
 
-  const handleTaskCardClick = (task) => {
-    if (isSelectMode) {
+  const handleTaskCardClick = (task, e) => {
+    if (isSelectMode || (e && (e.ctrlKey || e.metaKey || e.shiftKey))) {
+      if (!isSelectMode) setIsSelectMode(true);
       if (selectedTaskIds.includes(task.id)) {
         const next = selectedTaskIds.filter(id => id !== task.id);
         setSelectedTaskIds(next);
         if (next.length === 0) setIsSelectMode(false);
       } else {
-        setSelectedTaskIds([...selectedTaskIds, task.id]);
+        setSelectedTaskIds(prev => prev.includes(task.id) ? prev : [...prev, task.id]);
       }
     } else {
       setSelectedTask(task);
@@ -514,7 +515,7 @@ const TaskListView = ({
                 <div 
                   key={task.id} 
                   className={`task-item-card ${task.completed ? 'completed' : ''} ${selectedTask?.id === task.id ? 'selected' : ''} ${isSelected ? 'bulk-selected' : ''}`}
-                  onClick={() => handleTaskCardClick(task)}
+                  onClick={(e) => handleTaskCardClick(task, e)}
                   onTouchStart={() => startLongPress(task)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
@@ -613,7 +614,7 @@ const TaskListView = ({
                   <div 
                     key={task.id} 
                     className={`task-item-card completed ${selectedTask?.id === task.id ? 'selected' : ''} ${isSelected ? 'bulk-selected' : ''}`}
-                    onClick={() => handleTaskCardClick(task)}
+                    onClick={(e) => handleTaskCardClick(task, e)}
                     onTouchStart={() => startLongPress(task)}
                     onTouchEnd={cancelLongPress}
                     onTouchMove={cancelLongPress}
