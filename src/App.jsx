@@ -15,7 +15,6 @@ import MobileNav from './components/MobileNav';
 import PwaBanner from './components/PwaBanner';
 import CreateWeekModal from './components/CreateWeekModal';
 import { Calendar } from 'lucide-react';
-import { startAlarmChimeLoop, stopAlarmChime, triggerSystemNotification } from './utils/audioAlarm';
 import { APP_VERSION } from './config/version';
 import { 
   getWeeks, 
@@ -53,8 +52,6 @@ function App() {
   const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
   const [createWeekModalOpen, setCreateWeekModalOpen] = useState(false);
-  const [activeAlarmBanner, setActiveAlarmBanner] = useState(null);
-  const triggeredAlarmsRef = useRef(new Set());
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
@@ -104,58 +101,6 @@ function App() {
     if (currentWeekId) {
       updateProgress(currentWeekId);
     }
-  }, [currentWeekId]);
-
-  // Background Alarm Checker Service (Runs every 10 seconds)
-  useEffect(() => {
-    if (!currentWeekId) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const schedule = await getScheduleForWeek(currentWeekId);
-        if (!schedule) return;
-
-        const now = new Date();
-        const currentHH = String(now.getHours()).padStart(2, '0');
-        const currentMM = String(now.getMinutes()).padStart(2, '0');
-        const currentHHMM = `${currentHH}:${currentMM}`;
-
-        for (const day in schedule) {
-          if (Array.isArray(schedule[day])) {
-            for (const slot of schedule[day]) {
-              if (slot.alarm && slot.alarm !== 'none' && slot.time) {
-                const match = slot.time.match(/\b\d{1,2}:\d{2}\b/);
-                if (match) {
-                  const [h, m] = match[0].split(':').map(Number);
-                  let targetMin = h * 60 + m;
-
-                  if (slot.alarm === '5min') targetMin -= 5;
-                  else if (slot.alarm === '15min') targetMin -= 15;
-                  else if (slot.alarm === '30min') targetMin -= 30;
-
-                  if (targetMin < 0) targetMin += 24 * 60;
-                  const alarmHH = String(Math.floor(targetMin / 60) % 24).padStart(2, '0');
-                  const alarmMM = String(targetMin % 60).padStart(2, '0');
-                  const alarmHHMM = `${alarmHH}:${alarmMM}`;
-
-                  if (currentHHMM === alarmHHMM) {
-                    const alarmKey = `${currentWeekId}_${slot.id}_${alarmHHMM}`;
-                    if (!triggeredAlarmsRef.current.has(alarmKey)) {
-                      triggeredAlarmsRef.current.add(alarmKey);
-                      startAlarmChimeLoop();
-                      triggerSystemNotification("⏰ HATIRLATICI ALARMI!", `${slot.activity || 'Etkinlik'} - Saat: ${slot.time}`);
-                      setActiveAlarmBanner({ slot, day });
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {}
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, [currentWeekId]);
 
   const broadcastCurrentState = async () => {
@@ -678,30 +623,7 @@ function App() {
         <DetailedReport weekId={currentWeekId} weekName={currentWeekName} />
       )}
 
-      {/* FLOATING ALARM NOTIFICATION BANNER */}
-      {activeAlarmBanner && (
-        <div className="alarm-notification-banner no-print">
-          <div className="alarm-banner-content">
-            <div className="alarm-icon-pulse">
-              <Bell size={24} />
-            </div>
-            <div className="alarm-banner-text">
-              <div className="alarm-banner-title">⏰ HATIRLATICI ALARMI!</div>
-              <div className="alarm-banner-sub">{activeAlarmBanner.slot.activity || 'Etkinlik'} - {activeAlarmBanner.slot.time}</div>
-            </div>
-          </div>
-          <button 
-            type="button" 
-            className="alarm-dismiss-btn"
-            onClick={() => {
-              stopAlarmChime();
-              setActiveAlarmBanner(null);
-            }}
-          >
-            🔕 Alarmı Durdur / Kapat
-          </button>
-        </div>
-      )}
+
 
       <MobileNav 
         activeTab={activeTab}

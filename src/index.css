@@ -4669,9 +4669,19 @@ body {
   padding: 0.2rem 0.6rem !important;
   border-radius: 20px !important;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
-  margin-left: 0.5rem !important;
+  margin-left: 0.4rem !important;
   vertical-align: middle !important;
   letter-spacing: 0.5px !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 768px) {
+  .app-version-badge {
+    font-size: 0.68rem !important;
+    padding: 0.15rem 0.45rem !important;
+    margin-left: 0.25rem !important;
+  }
 }
 
 .sidebar-app-brand {
