@@ -48,7 +48,7 @@ const Sidebar = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
   const [selectedMonth, setSelectedMonth] = useState('ALL');
-  const [showWeeksHistory, setShowWeeksHistory] = useState(false);
+  const [showWeeksHistory, setShowWeeksHistory] = useState(true);
   const [dialog, setDialog] = useState({ isOpen: false, type: null, payload: null });
 
   const handleTabClick = (tabId) => {
@@ -402,11 +402,14 @@ const Sidebar = ({
                     key={week.id} 
                     className={`week-item ${week.id === currentWeekId && activeTab === 'schedule' ? 'active' : ''} ${isSelected ? 'selected' : ''}`}
                     onClick={(e) => handleWeekClick(e, week.id)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.45rem 0.65rem' }}
                   >
-                    <span className="week-name">{week.name}</span>
-                    <div className="week-actions">
+                    <span className="week-name" style={{ fontWeight: week.id === currentWeekId ? 800 : 600 }}>{week.name}</span>
+                    <div className="week-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', opacity: 1 }}>
                       <button 
+                        type="button"
                         className="week-action-btn"
+                        title="Hafta İdefini Düzenle"
                         onClick={(e) => {
                           e.stopPropagation();
                           setDialog({ isOpen: true, type: 'rename', payload: { id: week.id, name: week.name }});
@@ -416,7 +419,10 @@ const Sidebar = ({
                       </button>
                       {weeks.length > 1 && (
                         <button 
+                          type="button"
                           className="week-action-btn delete-btn-sidebar"
+                          title="Haftayı Sil"
+                          style={{ color: '#ef4444' }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setDialog({ isOpen: true, type: 'singleDelete', payload: { id: week.id, name: week.name }});
