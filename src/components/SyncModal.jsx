@@ -10,8 +10,13 @@ const SyncModal = ({ isOpen, onClose, onRoomChanged }) => {
   if (!isOpen) return null;
 
   const currentRoom = getSyncRoom();
-  // Build URL with ?room= parameter
-  const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+  
+  // Build URL with ?room= parameter (fallback to web address if running locally via file://)
+  let baseUrl = `${window.location.origin}${window.location.pathname}`;
+  if (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null') {
+    baseUrl = 'https://muzafferagc.github.io/WeeklyPlanner/';
+  }
+  const shareUrl = `${baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'}?room=${currentRoom}`;
 
   const handleSaveRoom = (e) => {
     e.preventDefault();
