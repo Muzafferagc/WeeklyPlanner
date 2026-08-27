@@ -13,9 +13,8 @@ export const getSyncRoom = () => {
     }
 
     let savedRoom = null;
-    try { savedRoom = localStorage.setItem('sync_room_id', savedRoom); } catch (e) {}
     try { savedRoom = localStorage.getItem('sync_room_id'); } catch (e) {}
-    if (!savedRoom) {
+    if (!savedRoom || savedRoom === 'undefined' || savedRoom === 'null') {
       savedRoom = 'MUZAFFER-PLAN-2026';
       try { localStorage.setItem('sync_room_id', savedRoom); } catch (e) {}
     }
