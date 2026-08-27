@@ -103,6 +103,18 @@ function App() {
     }
   }, [currentWeekId]);
 
+  // Lock body scroll when mobile drawer is open to prevent background scrolling
+  useEffect(() => {
+    if (isMobileDrawerOpen) {
+      document.body.classList.add('drawer-open-lock');
+    } else {
+      document.body.classList.remove('drawer-open-lock');
+    }
+    return () => {
+      document.body.classList.remove('drawer-open-lock');
+    };
+  }, [isMobileDrawerOpen]);
+
   const broadcastCurrentState = async () => {
     lastMutationTimeRef.current = Date.now();
     const room = getSyncRoom();
