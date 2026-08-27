@@ -3649,6 +3649,17 @@ body {
   }
 }
 
+.add-task-list-dropdown {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+
 /* FLOATING BULK ACTION BAR */
 .bulk-action-bar {
   position: fixed;

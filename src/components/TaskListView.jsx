@@ -48,6 +48,16 @@ const TaskListView = ({
   const [showMoveModal, setShowMoveModal] = useState(false);
   const pressTimerRef = useRef(null);
 
+  const [selectedAddListId, setSelectedAddListId] = useState('');
+
+  React.useEffect(() => {
+    if (currentList && !currentList.id?.startsWith('smart_')) {
+      setSelectedAddListId(currentList.id);
+    } else {
+      setSelectedAddListId('list_programlanan');
+    }
+  }, [currentList]);
+
   // Safe list references
   const safeListId = currentList?.id || 'smart_all';
   const safeListName = currentList?.name || 'Görevler & Notlar';
@@ -123,10 +133,11 @@ const TaskListView = ({
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
-    let targetListId = 'list_programlanan';
+    let targetListId = selectedAddListId;
     if (currentList && !safeListId.startsWith('smart_')) {
       targetListId = safeListId;
     }
+    if (!targetListId) targetListId = 'list_programlanan';
 
     let dueDateLabel = '';
     if (newTaskDueDate) {
@@ -415,6 +426,20 @@ const TaskListView = ({
                 {newTaskDueDate ? newTaskDueDate : 'Tarih'}
               </span>
             </label>
+
+            {/* TARGET LIST SELECTOR */}
+            <div className="add-task-tool-btn list-select-tool-btn" title="Eklenecek Hedef Liste">
+              <Tag size={18} />
+              <select
+                value={selectedAddListId || (safeListId.startsWith('smart_') ? 'list_programlanan' : safeListId)}
+                onChange={(e) => setSelectedAddListId(e.target.value)}
+                className="add-task-list-dropdown"
+              >
+                {customLists.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
 
             <button
               type="button"
