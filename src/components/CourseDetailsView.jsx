@@ -350,16 +350,23 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
 
     const schedule = await getScheduleForWeek(assignForm.weekId);
     const daySlots = schedule[assignForm.day] || [];
+    const activeCourse = courses.find(c => c.id === activeCourseId);
+
+    const courseTitle = activeCourse ? activeCourse.title : 'Ders';
+    const topicTitle = selectedTopicForAssign.title || 'Konu';
+    const fullActivityName = `${courseTitle} - ${topicTitle}`;
 
     const newSlot = {
       id: generateId(),
-      time: 'Ders Yol Haritası',
-      subject: `[${activeCourse.title}] ${selectedTopicForAssign.title}`,
+      time: selectedTopicForAssign.targetDate ? `Ders Yol Haritası` : '08:00',
+      activity: fullActivityName,
+      subject: fullActivityName,
+      title: fullActivityName,
       type: 'ders',
       completed: selectedTopicForAssign.status === 'completed',
-      color: activeCourse.color || 'blue',
-      notes: selectedTopicForAssign.notes || '',
-      checklist: selectedTopicForAssign.checklist ? selectedTopicForAssign.checklist.map(c => ({ text: c.text, completed: c.completed })) : [],
+      color: activeCourse ? (activeCourse.color || 'blue') : 'blue',
+      notes: selectedTopicForAssign.notes ? `[Müfredat Notu]: ${selectedTopicForAssign.notes}` : '',
+      checklist: selectedTopicForAssign.checklist ? selectedTopicForAssign.checklist.map(c => ({ id: generateId(), text: c.text, completed: !!c.completed })) : [],
       links: [],
       images: []
     };
@@ -369,7 +376,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
     if (onDataChange) onDataChange();
 
     const targetWeekObj = weeks.find(w => w.id === assignForm.weekId);
-    alert(`✓ "${selectedTopicForAssign.title}" konusu ${targetWeekObj?.name} - ${assignForm.day} gününe eklendi!`);
+    alert(`✓ "${fullActivityName}" ders konusu ${targetWeekObj?.name || ''} - ${assignForm.day} gününün planına detaylarıyla eklendi!`);
     setIsAssignWeekModalOpen(false);
   };
 

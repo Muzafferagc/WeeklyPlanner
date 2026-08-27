@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, FileText, CheckSquare, Link as LinkIcon, Image as ImageIcon, Plus, Trash2, Clock } from 'lucide-react';
+import { X, FileText, CheckSquare, Link as LinkIcon, Image as ImageIcon, Plus, Trash2, Clock, Bell } from 'lucide-react';
 
 const SlotDetailModal = ({ slot, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState('notes');
@@ -9,6 +9,7 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
   const [links, setLinks] = useState(slot.links || []);
   const [images, setImages] = useState(slot.images || []);
   const [color, setColor] = useState(slot.color || 'gray');
+  const [alarm, setAlarm] = useState(slot.alarm || 'none');
 
   const fileInputRef = useRef(null);
 
@@ -24,7 +25,8 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
       checklist,
       links,
       images,
-      color
+      color,
+      alarm
     });
     onClose();
   };
@@ -117,16 +119,47 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
               />
             </div>
 
-            <div className="color-picker" style={{ marginTop: '0.4rem' }}>
-              {colors.map(c => (
-                <div 
-                  key={c.name}
-                  className={`color-option ${color === c.name ? 'selected' : ''}`}
-                  style={{ backgroundColor: c.hex }}
-                  onClick={() => setColor(c.name)}
-                  title={`${c.name} seç`}
-                />
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+              <div className="color-picker" style={{ margin: 0 }}>
+                {colors.map(c => (
+                  <div 
+                    key={c.name}
+                    className={`color-option ${color === c.name ? 'selected' : ''}`}
+                    style={{ backgroundColor: c.hex }}
+                    onClick={() => setColor(c.name)}
+                    title={`${c.name} seç`}
+                  />
+                ))}
+              </div>
+
+              <div className="alarm-select-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Bell size={15} style={{ color: alarm !== 'none' ? '#ef4444' : 'var(--text-muted)' }} />
+                <select 
+                  value={alarm} 
+                  onChange={(e) => {
+                    setAlarm(e.target.value);
+                    if (e.target.value !== 'none' && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+                      Notification.requestPermission();
+                    }
+                  }}
+                  className="alarm-select-dropdown"
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: alarm !== 'none' ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
+                    color: alarm !== 'none' ? '#ef4444' : 'var(--text-color)'
+                  }}
+                >
+                  <option value="none">🔔 Alarm: Kapalı</option>
+                  <option value="on_time">🔔 Saati Gelince</option>
+                  <option value="5min">🔔 5 Dakika Önce</option>
+                  <option value="15min">🔔 15 Dakika Önce</option>
+                  <option value="30min">🔔 30 Dakika Önce</option>
+                </select>
+              </div>
             </div>
           </div>
           <button className="close-btn" onClick={onClose}><X size={22} /></button>
