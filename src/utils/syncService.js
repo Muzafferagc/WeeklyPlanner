@@ -31,6 +31,7 @@ export const fetchCloudState = async () => {
 };
 
 let realtimeChannel = null;
+let pollInterval = null;
 
 export const subscribeToCloudSync = async (roomId, onDataReceived) => {
   const supabase = getSupabaseClient();
@@ -45,6 +46,9 @@ export const subscribeToCloudSync = async (roomId, onDataReceived) => {
   // 2. Setup Supabase Realtime WebSocket Listener
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
+  }
+  if (pollInterval) {
+    clearInterval(pollInterval);
   }
 
   try {
@@ -61,6 +65,14 @@ export const subscribeToCloudSync = async (roomId, onDataReceived) => {
       )
       .subscribe();
   } catch (e) {}
+
+  // 3. Fallback Poll every 2.5s for instant sync guarantee
+  pollInterval = setInterval(async () => {
+    const latest = await fetchCloudState();
+    if (latest) {
+      onDataReceived(latest);
+    }
+  }, 2500);
 };
 
 export const broadcastToCloud = async (roomId, fullState) => {
