@@ -64,8 +64,8 @@ function App() {
     // Setup Realtime Cloud Sync Listener
     const room = getSyncRoom();
     const handleSync = async (cloudData) => {
-      // If we made a local edit in the last 6 seconds, don't let incoming polling overwrite our local state!
-      if (Date.now() - lastMutationTimeRef.current < 6000) {
+      // If we made a local edit in the last 1.5 seconds, don't let incoming polling overwrite our local state!
+      if (Date.now() - lastMutationTimeRef.current < 1500) {
         return;
       }
       if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
@@ -83,14 +83,14 @@ function App() {
 
     subscribeToCloudSync(room, handleSync);
 
-    // Periodic Cloud Sync Polling every 4 seconds to guarantee instantaneous 2-way sync
+    // Periodic Cloud Sync Polling every 3 seconds to guarantee instantaneous 2-way sync
     const pollInterval = setInterval(async () => {
       try {
         const { fetchCloudState } = await import('./utils/syncService');
         const cloudData = await fetchCloudState(room);
         handleSync(cloudData);
       } catch(e) {}
-    }, 4000);
+    }, 3000);
 
     return () => clearInterval(pollInterval);
   }, []);
@@ -147,7 +147,21 @@ function App() {
     const tasks = await getCustomTasks();
     setCustomLists(lists);
     setCustomTasks(tasks);
-    broadcastCurrentState();
+    await broadcastCurrentState();
+
+    try {
+      const room = getSyncRoom();
+      const { fetchCloudState } = await import('./utils/syncService');
+      const cloudData = await fetchCloudState(room);
+      if (cloudData) {
+        const res = await importData(JSON.stringify(cloudData));
+        if (res && res.success) {
+          setWeeks(await getWeeks());
+          setCustomLists(await getCustomLists());
+          setCustomTasks(await getCustomTasks());
+        }
+      }
+    } catch (e) {}
   };
 
   const handleCreateWeek = async () => {

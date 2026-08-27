@@ -1,13 +1,13 @@
-// --- FIREBASE REALTIME CLOUD SYNC & DEVICE PAIRING SERVICE ---
+// --- NTFY.SH ULTRA-FAST REALTIME CLOUD SYNC SERVICE ---
 
-const DEFAULT_FIREBASE_URL = 'https://weekly-planner-sync-default-rtdb.firebaseio.com';
+const NTFY_BASE_URL = 'https://ntfy.sh';
 
 export const getSyncRoom = () => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
     if (roomFromUrl) {
-      const cleanRoom = roomFromUrl.trim().toUpperCase();
+      const cleanRoom = roomFromUrl.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
       try { localStorage.setItem('sync_room_id', cleanRoom); } catch (e) {}
       return cleanRoom;
     }
@@ -15,104 +15,110 @@ export const getSyncRoom = () => {
     let savedRoom = null;
     try { savedRoom = localStorage.getItem('sync_room_id'); } catch (e) {}
     if (!savedRoom || savedRoom === 'undefined' || savedRoom === 'null') {
-      savedRoom = 'MUZAFFER-PLAN-2026';
+      savedRoom = 'muzaffer-plan-2026';
       try { localStorage.setItem('sync_room_id', savedRoom); } catch (e) {}
     }
     return savedRoom;
   } catch (err) {
-    return 'MUZAFFER-PLAN-2026';
+    return 'muzaffer-plan-2026';
   }
 };
 
 export const setSyncRoom = (roomId) => {
-  const cleanRoom = roomId.trim().toUpperCase();
+  const cleanRoom = roomId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
   try { localStorage.setItem('sync_room_id', cleanRoom); } catch (e) {}
   return cleanRoom;
 };
 
-const extractStatePayload = (raw) => {
-  if (!raw || typeof raw !== 'object') return null;
-  if (raw.weeks && Array.isArray(raw.weeks)) return raw;
-  if (raw.data && typeof raw.data === 'object') {
-    if (raw.data.weeks && Array.isArray(raw.data.weeks)) return raw.data;
-    if (raw.data.data && typeof raw.data.data === 'object' && Array.isArray(raw.data.data.weeks)) {
-      return raw.data.data;
+// Extract data from ntfy JSON message
+const extractStateFromMessage = (msgText) => {
+  try {
+    if (!msgText) return null;
+    const obj = typeof msgText === 'string' ? JSON.parse(msgText) : msgText;
+    
+    // 1. If wrapped in ntfy message container
+    if (obj && obj.message) {
+      try {
+        const inner = typeof obj.message === 'string' ? JSON.parse(obj.message) : obj.message;
+        if (inner && inner.weeks && Array.isArray(inner.weeks)) return inner;
+      } catch (e) {}
     }
-  }
+    
+    // 2. Direct state object
+    if (obj && obj.weeks && Array.isArray(obj.weeks)) return obj;
+  } catch (e) {}
   return null;
 };
 
 export const fetchCloudState = async (roomId) => {
   try {
-    const url = `${DEFAULT_FIREBASE_URL}/rooms/${roomId}.json`;
+    const topic = roomId || getSyncRoom();
+    const url = `${NTFY_BASE_URL}/${topic}/json?poll=1`;
     const res = await fetch(url);
     if (!res.ok) return null;
-    const json = await res.json();
-    return extractStatePayload(json);
+    const text = await res.text();
+    
+    // ntfy returns line-delimited JSON for poll
+    const lines = text.trim().split('\n').filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const state = extractStateFromMessage(lines[i]);
+      if (state) return state;
+    }
   } catch (e) {}
   return null;
 };
 
-// Listen to Realtime Events via EventSource (Server-Sent Events)
 let activeEventSource = null;
 let isBroadcasting = false;
 
 export const subscribeToCloudSync = async (roomId, onDataReceived) => {
+  const topic = roomId || getSyncRoom();
+
   if (activeEventSource) {
     activeEventSource.close();
   }
 
-  // Initial Fetch from Cloud Room on connect
-  const initialData = await fetchCloudState(roomId);
+  // 1. Initial Fetch on Connect
+  const initialData = await fetchCloudState(topic);
   if (initialData) {
     onDataReceived(initialData);
   }
 
-  const streamUrl = `${DEFAULT_FIREBASE_URL}/rooms/${roomId}.json`;
-  
+  // 2. Subscribe to Realtime SSE Stream
   try {
+    const streamUrl = `${NTFY_BASE_URL}/${topic}/json`;
     const es = new EventSource(streamUrl);
     activeEventSource = es;
 
     es.onmessage = (event) => {
       if (isBroadcasting) return; // Skip echo from own broadcast
       try {
-        const payload = JSON.parse(event.data);
-        const statePayload = extractStatePayload(payload);
-        if (statePayload) {
-          onDataReceived(statePayload);
+        const state = extractStateFromMessage(event.data);
+        if (state) {
+          onDataReceived(state);
         }
-      } catch (e) {
-        // console.error("Sync Parse error", e);
-      }
+      } catch (e) {}
     };
 
     es.onerror = () => {
-      // Automatic reconnect built-in to EventSource
+      // EventSource auto reconnects
     };
-  } catch (err) {
-    // console.error("SSE connection error", err);
-  }
+  } catch (err) {}
 };
 
-// Broadcast local state to Cloud Database
 export const broadcastToCloud = async (roomId, fullState) => {
+  const topic = roomId || getSyncRoom();
   isBroadcasting = true;
   try {
-    const url = `${DEFAULT_FIREBASE_URL}/rooms/${roomId}.json`;
+    const url = `${NTFY_BASE_URL}/${topic}`;
     await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        data: fullState,
-        updatedAt: new Date().toISOString()
-      })
+      method: 'POST',
+      body: JSON.stringify(fullState)
     });
   } catch (err) {
-    // console.error("Broadcast failed", err);
   } finally {
     setTimeout(() => {
       isBroadcasting = false;
-    }, 500);
+    }, 400);
   }
 };
