@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Clock, ChevronLeft, ChevronRight, ChevronDown, Calendar, Check, PlusCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, Clock, ChevronLeft, ChevronRight, ChevronDown, Calendar, Check, PlusCircle, CheckSquare } from 'lucide-react';
 import { getScheduleForWeek, saveScheduleForWeek, generateId } from '../utils/storage';
 import SlotDetailModal from './SlotDetailModal';
 import QuickTimePickerModal from './QuickTimePickerModal';
 import DialogModal from './DialogModal';
 import confetti from 'canvas-confetti';
 
-const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onDeleteWeek, onScheduleChange, refreshTrigger }) => {
+const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onDeleteWeek, onMultiDeleteWeeks, onScheduleChange, refreshTrigger }) => {
   const [schedule, setSchedule] = useState(null);
   const [editingSlot, setEditingSlot] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
   const [isWeekListModalOpen, setIsWeekListModalOpen] = useState(false);
+  const [selectedWeeksModal, setSelectedWeeksModal] = useState([]);
 
   // Quick time picker state for Red Region (07:00)
   const [quickTimeTarget, setQuickTimeTarget] = useState(null);
@@ -260,6 +261,14 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
 
   const WEEK_DAYS_ORDER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
   const days = schedule ? WEEK_DAYS_ORDER.filter(d => schedule[d] !== undefined) : [];
+
+  const sortedWeeksModal = useMemo(() => {
+    return [...weeks].sort((a, b) => {
+      const dateA = new Date(a.startDate || a.createdAt || 0);
+      const dateB = new Date(b.startDate || b.createdAt || 0);
+      return dateB - dateA;
+    });
+  }, [weeks]);
 
   const currentWeekIndex = weeks.findIndex(w => w.id === weekId);
   const currentWeekObj = weeks[currentWeekIndex] || weeks[0];
@@ -527,31 +536,44 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
             <p className="modal-sub-desc">Geçmiş veya gelecek haftaların programlarına hızlıca geçiş yapın:</p>
 
             <div className="week-modal-list">
-              {weeks.map((w, index) => {
+              {sortedWeeksModal.map((w, index) => {
                 const isActive = w.id === weekId;
+                const isMultiSelected = selectedWeeksModal.includes(w.id);
                 return (
                   <div 
                     key={w.id} 
-                    className={`week-list-item-card ${isActive ? 'active-week-item' : ''}`}
-                    onClick={() => {
-                      if (onSelectWeek) onSelectWeek(w.id);
-                      setIsWeekListModalOpen(false);
+                    className={`week-list-item-card ${isActive ? 'active-week-item' : ''} ${isMultiSelected ? 'multi-selected-item' : ''}`}
+                    style={{
+                      border: isMultiSelected ? '2px solid #ef4444' : undefined,
+                      background: isMultiSelected ? 'rgba(239, 68, 68, 0.08)' : undefined
+                    }}
+                    onClick={(e) => {
+                      if (e.ctrlKey || e.metaKey || selectedWeeksModal.length > 0) {
+                        if (isMultiSelected) {
+                          setSelectedWeeksModal(selectedWeeksModal.filter(id => id !== w.id));
+                        } else {
+                          setSelectedWeeksModal([...selectedWeeksModal, w.id]);
+                        }
+                      } else {
+                        if (onSelectWeek) onSelectWeek(w.id);
+                        setIsWeekListModalOpen(false);
+                      }
                     }}
                   >
                     <div className="week-item-left">
-                      <div className={`week-item-icon-circle ${isActive ? 'active' : ''}`}>
-                        {isActive ? <Check size={16} /> : <Calendar size={16} />}
+                      <div className={`week-item-icon-circle ${isActive ? 'active' : ''}`} style={{ background: isMultiSelected ? '#ef4444' : undefined, color: isMultiSelected ? '#ffffff' : undefined }}>
+                        {isMultiSelected ? <CheckSquare size={16} /> : (isActive ? <Check size={16} /> : <Calendar size={16} />)}
                       </div>
                       <div>
                         <div className="week-item-title">
                           {w.name} {isActive && <span className="active-badge">Aktif</span>}
                         </div>
-                        <div className="week-item-date">{w.startDate && w.endDate ? `${w.startDate} - ${w.endDate}` : `Hafta #${index + 1}`}</div>
+                        <div className="week-item-date">{w.startDate ? new Date(w.startDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : `Hafta #${index + 1}`}</div>
                       </div>
                     </div>
                     <div className="week-item-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <button type="button" className="select-week-btn">
-                        {isActive ? 'Açık' : 'Plana Git →'}
+                        {isMultiSelected ? 'Seçildi ✓' : (isActive ? 'Açık' : 'Plana Git →')}
                       </button>
 
                       {weeks.length > 1 && onDeleteWeek && (
@@ -586,7 +608,34 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
               })}
             </div>
 
-            <div className="week-modal-footer" style={{ marginTop: '1rem' }}>
+            {selectedWeeksModal.length > 0 && (
+              <div className="bulk-delete-banner" style={{ marginTop: '0.75rem', padding: '0.65rem', background: 'rgba(239, 68, 68, 0.12)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ef4444' }}>
+                  {selectedWeeksModal.length} Hafta Seçildi
+                </span>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '0.5rem 0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  onClick={async () => {
+                    if (window.confirm(`Seçili ${selectedWeeksModal.length} haftayı silmek istediğinize emin misiniz?`)) {
+                      if (onMultiDeleteWeeks) {
+                        await onMultiDeleteWeeks(selectedWeeksModal);
+                      } else if (onDeleteWeek) {
+                        for (const id of selectedWeeksModal) {
+                          await onDeleteWeek(id);
+                        }
+                      }
+                      setSelectedWeeksModal([]);
+                    }
+                  }}
+                >
+                  <Trash2 size={16} /> Seçili Haftaları Sil
+                </button>
+              </div>
+            )}
+
+            <div className="week-modal-footer" style={{ marginTop: '0.75rem' }}>
               {onCreateNewWeek && (
                 <button 
                   type="button" 
@@ -595,6 +644,7 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
                   onClick={() => {
                     onCreateNewWeek();
                     setIsWeekListModalOpen(false);
+                    setSelectedWeeksModal([]);
                   }}
                 >
                   <PlusCircle size={18} /> Yeni Hafta Oluştur

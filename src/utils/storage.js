@@ -89,32 +89,38 @@ export const getWeeks = async () => {
     await localforage.setItem('weeks', weeks);
     await localforage.setItem(`schedule_${defaultWeek.id}`, baseSchedule);
   }
-  return weeks.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  return weeks.sort((a, b) => {
+    const dateA = new Date(a.startDate || a.createdAt || 0);
+    const dateB = new Date(b.startDate || b.createdAt || 0);
+    return dateA - dateB;
+  });
 };
 
-export const createNewWeek = async (mode = 'next', customStartDate = null) => {
+export const createNewWeek = async (mode = 'next', customStartDate = null, activeWeekId = null) => {
   const weeks = await getWeeks();
   
-  let minDate = new Date();
-  let maxDate = new Date(0);
-
-  weeks.forEach(w => {
-    if (w.startDate) {
-      const d = new Date(w.startDate);
-      if (d < minDate) minDate = new Date(d);
-      if (d > maxDate) maxDate = new Date(d);
-    }
-  });
-
   let targetMonday;
-  if (mode === 'prev') {
-    targetMonday = new Date(minDate);
-    targetMonday.setDate(targetMonday.getDate() - 7);
-  } else if (mode === 'custom' && customStartDate) {
+  if (mode === 'custom' && customStartDate) {
     targetMonday = getMonday(new Date(customStartDate));
   } else {
-    targetMonday = maxDate.getTime() > 0 ? new Date(maxDate) : getMonday();
-    targetMonday.setDate(targetMonday.getDate() + 7);
+    // Find reference date: active week or min/max week
+    const activeWeekObj = weeks.find(w => w.id === activeWeekId);
+    
+    if (mode === 'prev') {
+      let minDate = activeWeekObj && activeWeekObj.startDate ? new Date(activeWeekObj.startDate) : new Date();
+      if (!activeWeekObj && weeks.length > 0) {
+        minDate = new Date(weeks[0].startDate || weeks[0].createdAt);
+      }
+      targetMonday = new Date(minDate);
+      targetMonday.setDate(targetMonday.getDate() - 7);
+    } else { // mode === 'next'
+      let maxDate = activeWeekObj && activeWeekObj.startDate ? new Date(activeWeekObj.startDate) : new Date();
+      if (!activeWeekObj && weeks.length > 0) {
+        maxDate = new Date(weeks[weeks.length - 1].startDate || weeks[weeks.length - 1].createdAt);
+      }
+      targetMonday = new Date(maxDate);
+      targetMonday.setDate(targetMonday.getDate() + 7);
+    }
   }
 
   const newWeek = {

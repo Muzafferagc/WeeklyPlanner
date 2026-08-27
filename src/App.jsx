@@ -158,7 +158,7 @@ function App() {
   };
 
   const handleCreateWeek = async (mode = 'next', customDate = null) => {
-    const newWeek = await createNewWeek(mode, customDate);
+    const newWeek = await createNewWeek(mode, customDate, currentWeekId);
     const updatedWeeks = await getWeeks();
     setWeeks(updatedWeeks);
     setCurrentWeekId(newWeek.id);
@@ -532,6 +532,7 @@ function App() {
               onSelectWeek={(id) => setCurrentWeekId(id)}
               onCreateNewWeek={() => setCreateWeekModalOpen(true)}
               onDeleteWeek={handleDeleteWeek}
+              onMultiDeleteWeeks={handleMultiDeleteWeeks}
               refreshTrigger={syncRefreshKey}
               onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} 
             />
