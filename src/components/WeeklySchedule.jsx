@@ -59,14 +59,16 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
     }
   };
 
-  const [activeMobileDay, setActiveMobileDay] = useState(() => {
+  const getCurrentTodayName = () => {
     const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-    const todayName = dayNames[new Date().getDay()];
-    return (todayName && todayName !== "Pazar") ? todayName : "Pazartesi";
-  });
+    return dayNames[new Date().getDay()] || "Pazartesi";
+  };
+
+  const [activeMobileDay, setActiveMobileDay] = useState(getCurrentTodayName);
 
   useEffect(() => {
     loadSchedule();
+    setActiveMobileDay(getCurrentTodayName());
   }, [weekId, refreshTrigger]);
 
   const loadSchedule = async () => {
