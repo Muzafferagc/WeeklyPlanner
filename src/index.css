@@ -4499,6 +4499,57 @@ body {
   line-height: 1.35;
 }
 
+/* ROCK-SOLID GLOBAL MODAL & MOBILE OVERLAY PROTECTION */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25000 !important;
+  padding: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .modal-overlay {
+    padding: 0.75rem;
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 20px)) !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-card,
+  .quick-time-picker-card,
+  .create-week-modal-card,
+  .week-list-modal-card,
+  .slot-detail-card,
+  .dialog-modal-card {
+    max-height: calc(100vh - 140px) !important;
+    max-height: calc(100dvh - 140px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 2.5rem !important;
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 24px !important;
+    border-bottom-right-radius: 24px !important;
+    width: 100% !important;
+    max-width: 500px !important;
+  }
+
+  .quick-time-footer,
+  .modal-footer,
+  .slot-detail-footer {
+    padding-bottom: 1rem !important;
+  }
+}
+
 
 
 

@@ -415,26 +415,19 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
                 {slot.time}
               </div>
               
-              {/* YELLOW AREA (Uyanış): If Ctrl is pressed, automatically multi-select instead of text editing */}
+              {/* YELLOW AREA (Uyanış): Opens SlotDetailModal cleanly on click without bringing up virtual keyboard */}
               <div 
                 className="activity-input yellow-region-activity"
-                contentEditable
-                suppressContentEditableWarning
-                onMouseDown={(e) => {
-                  if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault(); // Prevent text focus when holding Ctrl
-                  }
-                }}
                 onClick={(e) => {
                   if (e.ctrlKey || e.metaKey) {
                     handleSlotClick(e, day, slot);
                     e.stopPropagation();
                   } else {
                     e.stopPropagation();
+                    handleSlotClick(e, day, slot);
                   }
                 }}
-                onBlur={(e) => handleEditActivity(day, slot.id, e.target.textContent)}
-                title="İsmi düzenle (Ctrl ile çoklu seç)"
+                title="Etkinlik ayrıntılarını ve ismini düzenle"
               >
                 {slot.activity}
               </div>
