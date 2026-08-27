@@ -231,7 +231,13 @@ function App() {
   const handleConfirmReset = async () => {
     if (currentWeekId) {
       const defaultTemplate = await getDefaultScheduleTemplate();
-      await saveScheduleForWeek(currentWeekId, defaultTemplate);
+      const freshSchedule = JSON.parse(JSON.stringify(defaultTemplate));
+      for (let day in freshSchedule) {
+        if (Array.isArray(freshSchedule[day])) {
+          freshSchedule[day] = freshSchedule[day].map(s => ({ ...s, id: generateId() }));
+        }
+      }
+      await saveScheduleForWeek(currentWeekId, freshSchedule);
       setConfirmDialog({ isOpen: false, type: null });
       setSyncRefreshKey(prev => prev + 1);
       await broadcastCurrentState();
@@ -245,7 +251,14 @@ function App() {
 
   const handleApplyTemplateToWeek = async (template) => {
     if (currentWeekId && template) {
-      await saveScheduleForWeek(currentWeekId, template);
+      await saveDefaultScheduleTemplate(template);
+      const freshSchedule = JSON.parse(JSON.stringify(template));
+      for (let day in freshSchedule) {
+        if (Array.isArray(freshSchedule[day])) {
+          freshSchedule[day] = freshSchedule[day].map(s => ({ ...s, id: generateId() }));
+        }
+      }
+      await saveScheduleForWeek(currentWeekId, freshSchedule);
       setSyncRefreshKey(prev => prev + 1);
       await broadcastCurrentState();
       confetti({

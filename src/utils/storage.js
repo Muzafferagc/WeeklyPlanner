@@ -35,19 +35,38 @@ export const formatWeekString = (mondayDate) => {
 };
 
 export const getDefaultScheduleTemplate = async () => {
-  const custom = await localforage.getItem('customDefaultSchedule');
-  if (custom && typeof custom === 'object') {
-    return JSON.parse(JSON.stringify(custom));
+  try {
+    const custom = await localforage.getItem('customDefaultSchedule');
+    if (custom && typeof custom === 'object' && Object.keys(custom).length > 0) {
+      return JSON.parse(JSON.stringify(custom));
+    }
+  } catch (e) {}
+
+  const lsCustom = localStorage.getItem('customDefaultSchedule');
+  if (lsCustom) {
+    try {
+      const parsed = JSON.parse(lsCustom);
+      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+        return parsed;
+      }
+    } catch (e) {}
   }
+
   return JSON.parse(JSON.stringify(initialSchedule));
 };
 
 export const saveDefaultScheduleTemplate = async (template) => {
   await localforage.setItem('customDefaultSchedule', template);
+  try {
+    localStorage.setItem('customDefaultSchedule', JSON.stringify(template));
+  } catch (e) {}
 };
 
 export const resetDefaultScheduleTemplateToFactory = async () => {
   await localforage.removeItem('customDefaultSchedule');
+  try {
+    localStorage.removeItem('customDefaultSchedule');
+  } catch (e) {}
   return JSON.parse(JSON.stringify(initialSchedule));
 };
 

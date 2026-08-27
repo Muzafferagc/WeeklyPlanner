@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, RotateCcw, Save, Sparkles, Clock, Play } from 'lucide-react';
+import { X, Plus, Trash2, RotateCcw, Save, Sparkles, Clock, Play, CheckSquare } from 'lucide-react';
 import { getDefaultScheduleTemplate, saveDefaultScheduleTemplate, resetDefaultScheduleTemplateToFactory, generateId } from '../utils/storage';
 import QuickTimePickerModal from './QuickTimePickerModal';
 
 export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCurrentWeek }) {
   const [template, setTemplate] = useState(null);
   const [quickTimeTarget, setQuickTimeTarget] = useState(null);
+  const [selectedSlots, setSelectedSlots] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       loadTemplate();
+      setSelectedSlots([]);
     }
   }, [isOpen]);
 
@@ -21,6 +23,41 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
   if (!isOpen || !template) return null;
 
   const days = Object.keys(template);
+
+  const handleSlotClick = (e, day, slot) => {
+    if (selectedSlots.length > 0 || e.ctrlKey || e.metaKey || e.shiftKey) {
+      const exists = selectedSlots.find(s => s.id === slot.id);
+      if (exists) {
+        setSelectedSlots(prev => prev.filter(s => s.id !== slot.id));
+      } else {
+        setSelectedSlots(prev => [...prev, { day, id: slot.id }]);
+      }
+    }
+  };
+
+  const handleMultiColorChange = (color) => {
+    let newTemplate = { ...template };
+    selectedSlots.forEach(({ day, id }) => {
+      if (newTemplate[day]) {
+        newTemplate[day] = newTemplate[day].map(s => s.id === id ? { ...s, color } : s);
+      }
+    });
+    setTemplate(newTemplate);
+    setSelectedSlots([]);
+  };
+
+  const handleMultiDelete = () => {
+    if (window.confirm(`${selectedSlots.length} varsayılan plan ögesini silmek istediğinize emin misiniz?`)) {
+      let newTemplate = { ...template };
+      selectedSlots.forEach(({ day, id }) => {
+        if (newTemplate[day]) {
+          newTemplate[day] = newTemplate[day].filter(s => s.id !== id);
+        }
+      });
+      setTemplate(newTemplate);
+      setSelectedSlots([]);
+    }
+  };
 
   const handleEditActivity = (day, slotId, newActivity) => {
     const trimmed = newActivity ? newActivity.trim() : '';
@@ -81,6 +118,7 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
     if (window.confirm('Varsayılan plan şablonu fabrika ayarlarına döndürülsün mü?')) {
       const reseted = await resetDefaultScheduleTemplateToFactory();
       setTemplate(reseted);
+      setSelectedSlots([]);
     }
   };
 
@@ -103,9 +141,9 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
           <div className="header-title-box">
             <Sparkles className="icon-sparkle text-primary" size={24} />
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 700 }}>Varsayılan Plan Şablonu (Düzenleme Sahnesi)</h2>
-              <p className="subtext" style={{ margin: 0, fontSize: '0.95rem', opacity: 0.8 }}>
-                Yeni haftalarınıza ve sıfırlamalarınıza yüklenecek varsayılan 7 günlük programınızı burada serbestçe planlayın.
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>Varsayılan Plan Şablonu (Düzenleme Sahnesi)</h2>
+              <p className="subtext" style={{ margin: 0, fontSize: '0.88rem', opacity: 0.85 }}>
+                Yeni haftalarınıza ve sıfırlamalarınıza yüklenecek şablonunuzu planlayın. (Ctrl ile toplu renk değiştirebilirsiniz)
               </p>
             </div>
           </div>
@@ -131,91 +169,111 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
               <div key={day} className="day-column default-day-column">
                 <div className="day-title">{day} ({template[day]?.length || 0})</div>
 
-                {template[day]?.map((slot) => (
-                  <div key={slot.id} className={`time-slot color-${slot.color || 'gray'}`}>
-                    <div className="slot-actions no-print">
-                      <select
-                        value={slot.color || 'gray'}
-                        onChange={(e) => handleColorChange(day, slot.id, e.target.value)}
-                        className="mini-color-select"
-                        title="Renk Değiştir"
-                      >
-                                                <option value="gray">Gri</option>
-                        <option value="red">Kırmızı</option>
-                        <option value="blue">Mavi</option>
-                        <option value="green">Yeşil</option>
-                        <option value="yellow">Sarı</option>
-                        <option value="purple">Açık Mor</option>
-                        <option value="violet">Koyu Kraliçe Moru</option>
-                        <option value="orange">Turuncu</option>
-                        <option value="pink">Pembe</option>
-                        <option value="teal">Deniz Mavisi (Teal)</option>
-                        <option value="lime">Limon Yeşili</option>
-                        <option value="brown">Kahverengi</option>
-                      </select>
+                {template[day]?.map((slot) => {
+                  const isSelected = selectedSlots.some(s => s.id === slot.id);
+                  return (
+                    <div 
+                      key={slot.id} 
+                      className={`time-slot color-${slot.color || 'gray'} ${isSelected ? 'selected' : ''}`}
+                      onClick={(e) => handleSlotClick(e, day, slot)}
+                    >
+                      <div className="slot-actions no-print">
+                        <select
+                          value={slot.color || 'gray'}
+                          onChange={(e) => handleColorChange(day, slot.id, e.target.value)}
+                          className="mini-color-select"
+                          title="Renk Değiştir"
+                        >
+                          <option value="gray">Gri</option>
+                          <option value="red">Kırmızı</option>
+                          <option value="blue">Mavi</option>
+                          <option value="green">Yeşil</option>
+                          <option value="yellow">Sarı</option>
+                          <option value="purple">Açık Mor</option>
+                          <option value="violet">Koyu Kraliçe Moru</option>
+                          <option value="orange">Turuncu</option>
+                          <option value="pink">Pembe</option>
+                          <option value="teal">Deniz Mavisi (Teal)</option>
+                          <option value="lime">Limon Yeşili</option>
+                          <option value="brown">Kahverengi</option>
+                        </select>
 
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDeleteSlot(day, slot.id)}
-                        title="Şablondan Sil"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                        <button 
+                          className="delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSlot(day, slot.id);
+                          }}
+                          title="Şablondan Sil"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
 
-                    {/* RED REGION: Time text with clock button & inline editing + quick modal trigger */}
-                    <div className="time-row-container" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <button
-                        type="button"
-                        className="clock-quick-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          setQuickTimeTarget({ slot, day });
-                        }}
-                        title="Saat ve süre menüsünü aç"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 0,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          color: 'var(--primary)'
-                        }}
-                      >
-                        <Clock size={14} />
-                      </button>
+                      {/* RED REGION: Time text with clock button */}
+                      <div className="time-row-container" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <button
+                          type="button"
+                          className="clock-quick-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setQuickTimeTarget({ slot, day });
+                          }}
+                          title="Saat ve süre menüsünü aç"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            color: 'var(--primary)'
+                          }}
+                        >
+                          <Clock size={14} />
+                        </button>
+                        <div
+                          className="time-input red-region-time"
+                          contentEditable
+                          suppressContentEditableWarning
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            if (e.ctrlKey || e.metaKey) {
+                              handleSlotClick(e, day, slot);
+                            } else {
+                              e.stopPropagation();
+                              setQuickTimeTarget({ slot, day });
+                            }
+                          }}
+                          onBlur={(e) => handleQuickSaveTime(day, slot.id, e.target.textContent)}
+                          title="Saate tıklayarak menüyü açın veya doğrudan düzenleyin"
+                        >
+                          {slot.time}
+                        </div>
+                      </div>
+
+                      {/* YELLOW REGION: Activity title inline text edit */}
                       <div
-                        className="time-input red-region-time"
+                        className="activity-input yellow-region-activity"
                         contentEditable
                         suppressContentEditableWarning
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
-                          e.stopPropagation();
-                          setQuickTimeTarget({ slot, day });
+                          if (e.ctrlKey || e.metaKey) {
+                            handleSlotClick(e, day, slot);
+                          } else {
+                            e.stopPropagation();
+                          }
                         }}
-                        onBlur={(e) => handleQuickSaveTime(day, slot.id, e.target.textContent)}
-                        title="Saate tıklayarak menüyü açın veya doğrudan düzenleyin"
+                        onBlur={(e) => handleEditActivity(day, slot.id, e.target.textContent)}
+                        title="İsmi değiştirmek için tıklayıp yazın (Ctrl ile çoklu seçin)"
                       >
-                        {slot.time}
+                        {slot.activity}
                       </div>
                     </div>
-
-                    {/* YELLOW REGION: Activity title inline text edit */}
-                    <div
-                      className="activity-input yellow-region-activity"
-                      contentEditable
-                      suppressContentEditableWarning
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      onBlur={(e) => handleEditActivity(day, slot.id, e.target.textContent)}
-                      title="İsmi değiştirmek için tıklayıp yazın"
-                    >
-                      {slot.activity}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 <button 
                   className="add-btn no-print"
@@ -227,6 +285,36 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
             ))}
           </div>
         </div>
+
+        {/* MULTI ACTION BAR FOR TEMPLATE SCENE */}
+        {selectedSlots.length > 0 && (
+          <div className="multi-action-bar no-print" style={{ zIndex: 60000 }}>
+            <div className="multi-action-top-row">
+              <span className="selection-count">{selectedSlots.length} şablon ögesi seçildi</span>
+              <div className="multi-action-top-btns">
+                <button type="button" className="btn-secondary danger-btn" onClick={handleMultiDelete}>
+                  <Trash2 size={16} /> Sil
+                </button>
+                <button type="button" className="btn-secondary cancel-btn" onClick={() => setSelectedSlots([])}>
+                  İptal
+                </button>
+              </div>
+            </div>
+
+            <div className="multi-action-bottom-row">
+              <div className="multi-color-picker">
+                {['gray', 'red', 'blue', 'green', 'yellow', 'purple', 'violet', 'orange', 'pink', 'teal', 'lime', 'brown'].map(color => (
+                  <div 
+                    key={color}
+                    className={`color-option color-${color}`}
+                    onClick={() => handleMultiColorChange(color)}
+                    title="Seçilenlerin Rengini Değiştir"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* QUICK TIME PICKER FOR SCENE */}
         {quickTimeTarget && (
