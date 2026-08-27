@@ -58,10 +58,16 @@ function App() {
     loadApp();
   }, []);
 
+  const lastMutationTimeRef = React.useRef(0);
+
   useEffect(() => {
     // Setup Realtime Cloud Sync Listener
     const room = getSyncRoom();
     const handleSync = async (cloudData) => {
+      // If we made a local edit in the last 6 seconds, don't let incoming polling overwrite our local state!
+      if (Date.now() - lastMutationTimeRef.current < 6000) {
+        return;
+      }
       if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
         const res = await importData(JSON.stringify(cloudData));
         if (res && res.success) {
@@ -104,6 +110,7 @@ function App() {
   }, [currentWeekId]);
 
   const broadcastCurrentState = async () => {
+    lastMutationTimeRef.current = Date.now();
     const room = getSyncRoom();
     const jsonStr = await exportData(null, currentWeekId);
     try {
