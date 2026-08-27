@@ -241,6 +241,54 @@ export const saveCourseDetailsData = async (data) => {
 
 
 
+// --- RECURRENCE & DAY MATCHING HELPERS ---
+export const DAY_KEYS = ['Pzr', 'Pzt', 'Sal', 'Çrş', 'Prş', 'Cum', 'Cmt'];
+export const DAY_NAMES_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+export const isTaskActiveOnDate = (task, targetDate = new Date()) => {
+  if (!task) return false;
+  
+  const todayStr = targetDate.toISOString().split('T')[0];
+  const targetDayIdx = targetDate.getDay();
+  const targetDayKey = DAY_KEYS[targetDayIdx];
+
+  // 1. Explicitly in My Day or Due Today
+  if (task.inMyDay || task.dueDate === todayStr || task.dueDateLabel === 'Bugün') {
+    return true;
+  }
+
+  // 2. Check Recurrence Pattern
+  if (task.repeatType === 'daily') {
+    return true;
+  }
+  if (task.repeatType === 'weekdays') {
+    return targetDayIdx >= 1 && targetDayIdx <= 5; // Mon-Fri
+  }
+  if (task.repeatType === 'weekly') {
+    if (task.dueDate) {
+      return new Date(task.dueDate).getDay() === targetDayIdx;
+    }
+    return true;
+  }
+  if (task.repeatType === 'custom' && Array.isArray(task.repeatDays)) {
+    return task.repeatDays.includes(targetDayKey);
+  }
+
+  return false;
+};
+
+export const getRecurrenceLabel = (task) => {
+  if (!task || !task.repeatType || task.repeatType === 'none') return '';
+  if (task.repeatType === 'daily') return 'Her Gün';
+  if (task.repeatType === 'weekdays') return 'Hafta İçi (Pzt-Cum)';
+  if (task.repeatType === 'weekly') return 'Haftalık';
+  if (task.repeatType === 'monthly') return 'Aylık';
+  if (task.repeatType === 'custom' && Array.isArray(task.repeatDays) && task.repeatDays.length > 0) {
+    return task.repeatDays.join(', ');
+  }
+  return 'Tekrarlayan';
+};
+
 // --- MS TO-DO STYLE CUSTOM LISTS AND TASKS STORAGE ---
 
 export const initialCustomLists = [
@@ -267,6 +315,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Cmt', 'Pzr'],
     createdAt: new Date().toISOString()
   },
   {
@@ -280,6 +330,8 @@ export const initialCustomTasks = [
     starred: true,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Cmt', 'Pzr'],
     createdAt: new Date().toISOString()
   },
   {
@@ -293,6 +345,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Cum'],
     createdAt: new Date().toISOString()
   },
   {
@@ -306,6 +360,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Cum'],
     createdAt: new Date().toISOString()
   },
   {
@@ -319,6 +375,8 @@ export const initialCustomTasks = [
     starred: true,
     inMyDay: true,
     recurring: true,
+    repeatType: 'daily',
+    repeatDays: [],
     createdAt: new Date().toISOString()
   },
   {
@@ -332,6 +390,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Çrş'],
     createdAt: new Date().toISOString()
   },
   {
@@ -345,6 +405,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Çrş'],
     createdAt: new Date().toISOString()
   },
   {
@@ -358,6 +420,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Sal'],
     createdAt: new Date().toISOString()
   },
   {
@@ -371,6 +435,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Sal'],
     createdAt: new Date().toISOString()
   },
   {
@@ -384,6 +450,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: true,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Pzt'],
     createdAt: new Date().toISOString()
   },
   {
@@ -397,6 +465,8 @@ export const initialCustomTasks = [
     starred: false,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Pzt'],
     createdAt: new Date().toISOString()
   },
   {
@@ -410,6 +480,8 @@ export const initialCustomTasks = [
     starred: true,
     inMyDay: false,
     recurring: true,
+    repeatType: 'custom',
+    repeatDays: ['Pzt'],
     createdAt: new Date().toISOString()
   }
 ];

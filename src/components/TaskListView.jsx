@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   CheckCircle2, Circle, Star, Calendar, Sun, Plus, Trash2, Edit3, 
   MoreHorizontal, ListFilter, ArrowUpDown, Share2, LayoutList, Table,
-  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText
+  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat
 } from 'lucide-react';
 import { 
   addCustomTask, 
@@ -11,7 +11,10 @@ import {
   toggleTaskStar, 
   toggleTaskComplete,
   deleteCustomList,
-  renameCustomList
+  renameCustomList,
+  DAY_KEYS,
+  isTaskActiveOnDate,
+  getRecurrenceLabel
 } from '../utils/storage';
 import DialogModal from './DialogModal';
 
@@ -28,6 +31,10 @@ const TaskListView = ({
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [newTaskStarred, setNewTaskStarred] = useState(false);
   const [newTaskInMyDay, setNewTaskInMyDay] = useState(false);
+  const [newTaskRepeatType, setNewTaskRepeatType] = useState('none');
+  const [newTaskRepeatDays, setNewTaskRepeatDays] = useState([]);
+  const [showRepeatPopover, setShowRepeatPopover] = useState(false);
+
   const [selectedTask, setSelectedTask] = useState(null);
   const [dialog, setDialog] = useState({ isOpen: false, type: null });
   const [showCompleted, setShowCompleted] = useState(true);
@@ -39,11 +46,11 @@ const TaskListView = ({
     let result = [...tasks];
 
     if (currentList.id === 'smart_myday') {
-      result = result.filter(t => t.inMyDay || t.dueDateLabel === 'Bugün');
+      result = result.filter(t => isTaskActiveOnDate(t, new Date()));
     } else if (currentList.id === 'smart_important') {
       result = result.filter(t => t.starred);
     } else if (currentList.id === 'smart_planned') {
-      result = result.filter(t => Boolean(t.dueDate || t.dueDateLabel));
+      result = result.filter(t => Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')));
     } else if (currentList.id === 'smart_all') {
       // all tasks
     } else {
@@ -94,14 +101,29 @@ const TaskListView = ({
       dueDate: newTaskDueDate,
       dueDateLabel: dueDateLabel,
       starred: newTaskStarred,
-      inMyDay: currentList?.id === 'smart_myday' || newTaskInMyDay
+      inMyDay: currentList?.id === 'smart_myday' || newTaskInMyDay,
+      repeatType: newTaskRepeatType,
+      repeatDays: newTaskRepeatDays,
+      recurring: newTaskRepeatType !== 'none'
     });
 
     setNewTaskTitle('');
     setNewTaskDueDate('');
     setNewTaskStarred(false);
     setNewTaskInMyDay(false);
+    setNewTaskRepeatType('none');
+    setNewTaskRepeatDays([]);
+    setShowRepeatPopover(false);
     if (onRefreshData) onRefreshData();
+  };
+
+  const toggleQuickRepeatDay = (dayKey) => {
+    setNewTaskRepeatType('custom');
+    if (newTaskRepeatDays.includes(dayKey)) {
+      setNewTaskRepeatDays(newTaskRepeatDays.filter(d => d !== dayKey));
+    } else {
+      setNewTaskRepeatDays([...newTaskRepeatDays, dayKey]);
+    }
   };
 
   const handleToggleComplete = async (taskId, e) => {
@@ -128,6 +150,22 @@ const TaskListView = ({
     await updateCustomTask(selectedTask.id, updatedFields);
     setSelectedTask(prev => ({ ...prev, ...updatedFields }));
     if (onRefreshData) onRefreshData();
+  };
+
+  const toggleDetailRepeatDay = (dayKey) => {
+    if (!selectedTask) return;
+    const currentDays = Array.isArray(selectedTask.repeatDays) ? selectedTask.repeatDays : [];
+    let updatedDays = [];
+    if (currentDays.includes(dayKey)) {
+      updatedDays = currentDays.filter(d => d !== dayKey);
+    } else {
+      updatedDays = [...currentDays, dayKey];
+    }
+    handleUpdateTaskDetail({
+      repeatType: 'custom',
+      repeatDays: updatedDays,
+      recurring: true
+    });
   };
 
   const handleRenameListPrompt = () => {
@@ -176,7 +214,7 @@ const TaskListView = ({
                 onClick={handleRenameListPrompt}
                 title="Listeyi Yeniden Adlandır"
               >
-                <Edit3 size={16} />
+                <Edit3 size={18} />
               </button>
               <button 
                 type="button" 
@@ -184,7 +222,7 @@ const TaskListView = ({
                 onClick={handleDeleteListPrompt}
                 title="Listeyi Sil"
               >
-                <Trash2 size={16} />
+                <Trash2 size={18} />
               </button>
             </div>
           )}
@@ -199,7 +237,7 @@ const TaskListView = ({
               onClick={() => setViewMode('list')}
               title="Liste Görünümü"
             >
-              <LayoutList size={16} />
+              <LayoutList size={18} />
               <span>Liste</span>
             </button>
             <button 
@@ -208,7 +246,7 @@ const TaskListView = ({
               onClick={() => setViewMode('table')}
               title="Tablo Görünümü"
             >
-              <Table size={16} />
+              <Table size={18} />
               <span>Tablo</span>
             </button>
           </div>
@@ -232,7 +270,7 @@ const TaskListView = ({
       {/* QUICK ADD TASK CARD */}
       <form onSubmit={handleAddTask} className="add-task-card">
         <div className="add-task-input-row">
-          <Circle size={20} className="add-task-circle-icon" />
+          <Circle size={22} className="add-task-circle-icon" />
           <input
             type="text"
             placeholder="Görev veya Not ekle..."
@@ -245,7 +283,7 @@ const TaskListView = ({
         <div className="add-task-options-row">
           <div className="add-task-tools">
             <label className="add-task-tool-btn" title="Son Tarih Ekle">
-              <Calendar size={16} />
+              <Calendar size={18} />
               <input 
                 type="date"
                 value={newTaskDueDate}
@@ -263,9 +301,56 @@ const TaskListView = ({
               onClick={() => setNewTaskInMyDay(!newTaskInMyDay)}
               title="Günüm'e Ekle"
             >
-              <Sun size={16} />
+              <Sun size={18} />
               <span className="tool-btn-text">Günüm</span>
             </button>
+
+            {/* RECURRENCE (TEKRAR ETME / GÜN SEÇME) BUTTON */}
+            <div className="repeat-popover-wrapper">
+              <button
+                type="button"
+                className={`add-task-tool-btn ${newTaskRepeatType !== 'none' ? 'active' : ''}`}
+                onClick={() => setShowRepeatPopover(!showRepeatPopover)}
+                title="Tekrar Etme ve Gün Belirle"
+              >
+                <RefreshCw size={18} />
+                <span className="tool-btn-text">
+                  {newTaskRepeatType === 'none' ? 'Tekrar Et' : getRecurrenceLabel({ repeatType: newTaskRepeatType, repeatDays: newTaskRepeatDays })}
+                </span>
+              </button>
+
+              {showRepeatPopover && (
+                <div className="repeat-popover-menu">
+                  <div className="popover-title">Tekrar Sıklığı / Gün Seçin</div>
+                  <button type="button" className={`popover-option ${newTaskRepeatType === 'none' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('none'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
+                    Tekrarlama Yok
+                  </button>
+                  <button type="button" className={`popover-option ${newTaskRepeatType === 'daily' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('daily'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
+                    🔄 Her Gün
+                  </button>
+                  <button type="button" className={`popover-option ${newTaskRepeatType === 'weekdays' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('weekdays'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
+                    💼 Hafta İçi (Pzt-Cum)
+                  </button>
+                  <button type="button" className={`popover-option ${newTaskRepeatType === 'weekly' ? 'selected' : ''}`} onClick={() => { setNewTaskRepeatType('weekly'); setNewTaskRepeatDays([]); setShowRepeatPopover(false); }}>
+                    📅 Haftalık
+                  </button>
+
+                  <div className="popover-subtitle">VEYA Özel Gün(ler) Seçin:</div>
+                  <div className="days-chip-group">
+                    {DAY_KEYS.map(dk => (
+                      <button
+                        key={dk}
+                        type="button"
+                        className={`day-chip ${newTaskRepeatDays.includes(dk) ? 'active' : ''}`}
+                        onClick={() => toggleQuickRepeatDay(dk)}
+                      >
+                        {dk}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button
               type="button"
@@ -273,7 +358,7 @@ const TaskListView = ({
               onClick={() => setNewTaskStarred(!newTaskStarred)}
               title="Önemli İşaretle"
             >
-              <Star size={16} className={newTaskStarred ? 'star-filled' : ''} />
+              <Star size={18} className={newTaskStarred ? 'star-filled' : ''} />
               <span className="tool-btn-text">Önemli</span>
             </button>
           </div>
@@ -294,7 +379,7 @@ const TaskListView = ({
           {/* ACTIVE TASKS */}
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="empty-tasks-state">
-              <CheckSquare size={48} className="empty-icon" />
+              <CheckSquare size={52} className="empty-icon" />
               <h3>Bu listede henüz görev/not yok</h3>
               <p>Yukarıdaki alandan yeni bir görev veya not ekleyebilirsiniz.</p>
             </div>
@@ -311,7 +396,7 @@ const TaskListView = ({
                   onClick={(e) => handleToggleComplete(task.id, e)}
                   title="Tamamlandı İşaretle"
                 >
-                  <Circle size={20} className="circle-icon" />
+                  <Circle size={22} className="circle-icon" />
                 </button>
 
                 <div className="task-item-body">
@@ -320,25 +405,29 @@ const TaskListView = ({
                   <div className="task-item-badges">
                     {task.inMyDay && (
                       <span className="task-badge badge-myday">
-                        <Sun size={12} /> Günüm
+                        <Sun size={13} /> Günüm
                       </span>
                     )}
 
                     {(task.dueDateLabel || task.dueDate) && (
                       <span className="task-badge badge-date">
-                        <Calendar size={12} /> Son tarih: {task.dueDateLabel || task.dueDate}
+                        <Calendar size={13} /> Son tarih: {task.dueDateLabel || task.dueDate}
                       </span>
                     )}
 
-                    {task.recurring && (
+                    {(task.repeatType && task.repeatType !== 'none') ? (
+                      <span className="task-badge badge-repeat" title="Tekrar Etme Mantığı">
+                        <RefreshCw size={13} /> {getRecurrenceLabel(task)}
+                      </span>
+                    ) : task.recurring && (
                       <span className="task-badge badge-subtle" title="Tekrarlayan İş">
-                        <RefreshCw size={12} />
+                        <RefreshCw size={13} /> Tekrarlayan
                       </span>
                     )}
 
                     {currentList?.id.startsWith('smart_') && (
                       <span className="task-badge badge-list">
-                        <Tag size={12} /> {getListName(task.listId)}
+                        <Tag size={13} /> {getListName(task.listId)}
                       </span>
                     )}
                   </div>
@@ -351,7 +440,7 @@ const TaskListView = ({
                     onClick={(e) => handleToggleStar(task.id, e)}
                     title={task.starred ? "Önemli İşaretini Kaldır" : "Önemli İşaretle"}
                   >
-                    <Star size={18} className={task.starred ? 'star-filled' : 'star-outline'} />
+                    <Star size={20} className={task.starred ? 'star-filled' : 'star-outline'} />
                   </button>
 
                   <button 
@@ -360,7 +449,7 @@ const TaskListView = ({
                     onClick={(e) => handleDeleteTask(task.id, e)}
                     title="Görevi Sil"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>
@@ -375,7 +464,7 @@ const TaskListView = ({
                 className="completed-tasks-toggle"
                 onClick={() => setShowCompleted(!showCompleted)}
               >
-                {showCompleted ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                {showCompleted ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                 <span>Tamamlananlar ({completedTasks.length})</span>
               </button>
 
@@ -391,7 +480,7 @@ const TaskListView = ({
                     onClick={(e) => handleToggleComplete(task.id, e)}
                     title="Tamamlanmadı İşaretle"
                   >
-                    <CheckCircle2 size={20} className="check-icon" />
+                    <CheckCircle2 size={22} className="check-icon" />
                   </button>
 
                   <div className="task-item-body">
@@ -404,14 +493,14 @@ const TaskListView = ({
                       className="task-star-btn"
                       onClick={(e) => handleToggleStar(task.id, e)}
                     >
-                      <Star size={18} className={task.starred ? 'star-filled' : 'star-outline'} />
+                      <Star size={20} className={task.starred ? 'star-filled' : 'star-outline'} />
                     </button>
                     <button 
                       type="button"
                       className="task-delete-btn"
                       onClick={(e) => handleDeleteTask(task.id, e)}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
@@ -425,9 +514,10 @@ const TaskListView = ({
           <table className="tasks-table">
             <thead>
               <tr>
-                <th style={{ width: '40px' }}>Durum</th>
+                <th style={{ width: '45px' }}>Durum</th>
                 <th>Görev / Not Başlığı</th>
                 <th>Kategori / Liste</th>
+                <th>Tekrar / Günler</th>
                 <th>Son Tarih</th>
                 <th style={{ width: '60px' }}>Önemli</th>
                 <th style={{ width: '80px' }}>İşlemler</th>
@@ -436,7 +526,7 @@ const TaskListView = ({
             <tbody>
               {filteredTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                     Görev bulunamadı.
                   </td>
                 </tr>
@@ -449,7 +539,7 @@ const TaskListView = ({
                         className="table-check-btn"
                         onClick={(e) => handleToggleComplete(task.id, e)}
                       >
-                        {task.completed ? <CheckCircle2 size={18} className="check-icon" /> : <Circle size={18} />}
+                        {task.completed ? <CheckCircle2 size={20} className="check-icon" /> : <Circle size={20} />}
                       </button>
                     </td>
                     <td onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
@@ -457,6 +547,11 @@ const TaskListView = ({
                     </td>
                     <td>
                       <span className="table-badge-list">{getListName(task.listId)}</span>
+                    </td>
+                    <td>
+                      {task.repeatType && task.repeatType !== 'none' ? (
+                        <span className="table-badge-repeat">{getRecurrenceLabel(task)}</span>
+                      ) : '-'}
                     </td>
                     <td>
                       {task.dueDateLabel || task.dueDate ? (
@@ -469,7 +564,7 @@ const TaskListView = ({
                         className="table-star-btn"
                         onClick={(e) => handleToggleStar(task.id, e)}
                       >
-                        <Star size={16} className={task.starred ? 'star-filled' : 'star-outline'} />
+                        <Star size={18} className={task.starred ? 'star-filled' : 'star-outline'} />
                       </button>
                     </td>
                     <td>
@@ -478,7 +573,7 @@ const TaskListView = ({
                         className="table-delete-btn"
                         onClick={(e) => handleDeleteTask(task.id, e)}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </button>
                     </td>
                   </tr>
@@ -499,7 +594,7 @@ const TaskListView = ({
                 className="task-check-btn"
                 onClick={(e) => handleToggleComplete(selectedTask.id, e)}
               >
-                {selectedTask.completed ? <CheckCircle2 size={22} className="check-icon" /> : <Circle size={22} />}
+                {selectedTask.completed ? <CheckCircle2 size={24} className="check-icon" /> : <Circle size={24} />}
               </button>
 
               <input
@@ -514,7 +609,7 @@ const TaskListView = ({
                 className="task-detail-close-btn"
                 onClick={() => setSelectedTask(null)}
               >
-                <X size={20} />
+                <X size={22} />
               </button>
             </div>
 
@@ -525,7 +620,7 @@ const TaskListView = ({
                 className={`task-detail-action-btn ${selectedTask.inMyDay ? 'active' : ''}`}
                 onClick={() => handleUpdateTaskDetail({ inMyDay: !selectedTask.inMyDay })}
               >
-                <Sun size={18} />
+                <Sun size={20} />
                 <span>{selectedTask.inMyDay ? "Günüm'den Çıkar" : "Günüm'e Ekle"}</span>
               </button>
 
@@ -535,13 +630,53 @@ const TaskListView = ({
                 className={`task-detail-action-btn ${selectedTask.starred ? 'active' : ''}`}
                 onClick={() => handleUpdateTaskDetail({ starred: !selectedTask.starred })}
               >
-                <Star size={18} className={selectedTask.starred ? 'star-filled' : ''} />
+                <Star size={20} className={selectedTask.starred ? 'star-filled' : ''} />
                 <span>{selectedTask.starred ? "Önemli İşaretini Kaldır" : "Önemli İşaretle"}</span>
               </button>
 
+              {/* RECURRENCE / DAY SELECTION FIELD */}
+              <div className="task-detail-field">
+                <label><RefreshCw size={18} /> Tekrar Etme Mantığı & Gün Belirleme</label>
+                <select
+                  value={selectedTask.repeatType || 'none'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    handleUpdateTaskDetail({
+                      repeatType: val,
+                      recurring: val !== 'none'
+                    });
+                  }}
+                  className="task-detail-select"
+                >
+                  <option value="none">Tekrarlama Yok</option>
+                  <option value="daily">🔄 Her Gün</option>
+                  <option value="weekdays">💼 Hafta İçi (Pazartesi - Cuma)</option>
+                  <option value="weekly">📅 Haftalık (Her hafta bu gün)</option>
+                  <option value="monthly">📅 Aylık</option>
+                  <option value="custom">⚙️ Özel Gün Seçimi</option>
+                </select>
+
+                {/* CUSTOM DAYS SELECTION CHIPS */}
+                <div className="days-chip-group style-detail">
+                  {DAY_KEYS.map(dk => {
+                    const isSelected = Array.isArray(selectedTask.repeatDays) && selectedTask.repeatDays.includes(dk);
+                    return (
+                      <button
+                        key={dk}
+                        type="button"
+                        className={`day-chip ${isSelected ? 'active' : ''}`}
+                        onClick={() => toggleDetailRepeatDay(dk)}
+                      >
+                        {dk}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* DUE DATE SELECTOR */}
               <div className="task-detail-field">
-                <label><Calendar size={16} /> Son Tarih</label>
+                <label><Calendar size={18} /> Son Tarih</label>
                 <input 
                   type="date"
                   value={selectedTask.dueDate || ''}
@@ -562,7 +697,7 @@ const TaskListView = ({
 
               {/* LIST CATEGORY ASSIGNMENT */}
               <div className="task-detail-field">
-                <label><Tag size={16} /> Ait Olduğu Liste</label>
+                <label><Tag size={18} /> Ait Olduğu Liste</label>
                 <select
                   value={selectedTask.listId}
                   onChange={(e) => handleUpdateTaskDetail({ listId: e.target.value })}
@@ -576,7 +711,7 @@ const TaskListView = ({
 
               {/* NOTE TEXT AREA */}
               <div className="task-detail-field">
-                <label><FileText size={16} /> Not Ekle</label>
+                <label><FileText size={18} /> Not Ekle</label>
                 <textarea
                   placeholder="Bu görevle ilgili notlar, bağlantılar veya detaylar..."
                   value={selectedTask.note || ''}
@@ -593,7 +728,7 @@ const TaskListView = ({
                 className="task-detail-delete-btn"
                 onClick={(e) => handleDeleteTask(selectedTask.id, e)}
               >
-                <Trash2 size={16} /> Görevi Sil
+                <Trash2 size={18} /> Görevi Sil
               </button>
               <button 
                 type="button"
