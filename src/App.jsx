@@ -13,6 +13,7 @@ import ChangeWeekDateModal from './components/ChangeWeekDateModal';
 import SyncModal from './components/SyncModal';
 import MobileNav from './components/MobileNav';
 import PwaBanner from './components/PwaBanner';
+import CreateWeekModal from './components/CreateWeekModal';
 import { Calendar } from 'lucide-react';
 import { 
   getWeeks, 
@@ -49,6 +50,7 @@ function App() {
   const [defaultPlanModalOpen, setDefaultPlanModalOpen] = useState(false);
   const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
+  const [createWeekModalOpen, setCreateWeekModalOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
@@ -155,8 +157,8 @@ function App() {
     } catch (e) {}
   };
 
-  const handleCreateWeek = async () => {
-    const newWeek = await createNewWeek();
+  const handleCreateWeek = async (mode = 'next', customDate = null) => {
+    const newWeek = await createNewWeek(mode, customDate);
     const updatedWeeks = await getWeeks();
     setWeeks(updatedWeeks);
     setCurrentWeekId(newWeek.id);
@@ -365,7 +367,7 @@ function App() {
         weeks={weeks}
         currentWeekId={currentWeekId}
         onSelectWeek={setCurrentWeekId}
-        onCreateWeek={handleCreateWeek}
+        onCreateWeek={() => setCreateWeekModalOpen(true)}
         onDeleteWeek={handleDeleteWeek}
         onRenameWeek={handleRenameWeek}
         onMultiDeleteWeeks={handleMultiDeleteWeeks}
@@ -516,7 +518,7 @@ function App() {
               weekId={currentWeekId} 
               weeks={weeks}
               onSelectWeek={(id) => setCurrentWeekId(id)}
-              onCreateNewWeek={handleCreateWeek}
+              onCreateNewWeek={() => setCreateWeekModalOpen(true)}
               refreshTrigger={syncRefreshKey}
               onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} 
             />
@@ -579,6 +581,12 @@ function App() {
         weeks={weeks}
         onClose={() => setCopyWeekModalOpen(false)}
         onCopyWeek={handleExecuteCopyWeek}
+      />
+
+      <CreateWeekModal
+        isOpen={createWeekModalOpen}
+        onClose={() => setCreateWeekModalOpen(false)}
+        onCreateWeek={handleCreateWeek}
       />
 
       {currentWeekId && (

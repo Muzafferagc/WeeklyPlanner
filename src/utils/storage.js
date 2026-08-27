@@ -92,22 +92,35 @@ export const getWeeks = async () => {
   return weeks.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 };
 
-export const createNewWeek = async () => {
+export const createNewWeek = async (mode = 'next', customStartDate = null) => {
   const weeks = await getWeeks();
   
-  let nextMonday;
-  if (weeks.length > 0 && weeks[weeks.length - 1].startDate) {
-    nextMonday = new Date(weeks[weeks.length - 1].startDate);
-    nextMonday.setDate(nextMonday.getDate() + 7);
+  let minDate = new Date();
+  let maxDate = new Date(0);
+
+  weeks.forEach(w => {
+    if (w.startDate) {
+      const d = new Date(w.startDate);
+      if (d < minDate) minDate = new Date(d);
+      if (d > maxDate) maxDate = new Date(d);
+    }
+  });
+
+  let targetMonday;
+  if (mode === 'prev') {
+    targetMonday = new Date(minDate);
+    targetMonday.setDate(targetMonday.getDate() - 7);
+  } else if (mode === 'custom' && customStartDate) {
+    targetMonday = getMonday(new Date(customStartDate));
   } else {
-    nextMonday = getMonday();
-    nextMonday.setDate(nextMonday.getDate() + 7);
+    targetMonday = maxDate.getTime() > 0 ? new Date(maxDate) : getMonday();
+    targetMonday.setDate(targetMonday.getDate() + 7);
   }
 
   const newWeek = {
     id: generateId(),
-    name: formatWeekString(nextMonday),
-    startDate: nextMonday.toISOString(),
+    name: formatWeekString(targetMonday),
+    startDate: targetMonday.toISOString(),
     createdAt: new Date().toISOString()
   };
   
