@@ -40,7 +40,9 @@ const Sidebar = ({
   onTabChange,
   customLists = [],
   customTasks = [],
-  onRefreshData
+  onRefreshData,
+  isMobileDrawerOpen,
+  onCloseMobileDrawer
 }) => {
   const [selectedWeeks, setSelectedWeeks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +50,11 @@ const Sidebar = ({
   const [selectedMonth, setSelectedMonth] = useState('ALL');
   const [showWeeksHistory, setShowWeeksHistory] = useState(false);
   const [dialog, setDialog] = useState({ isOpen: false, type: null, payload: null });
+
+  const handleTabClick = (tabId) => {
+    if (onTabChange) onTabChange(tabId);
+    if (onCloseMobileDrawer) onCloseMobileDrawer();
+  };
 
   // Compute Task Counts for Smart Views
   const myDayCount = useMemo(() => customTasks.filter(t => !t.completed && (t.inMyDay || t.dueDateLabel === 'Bugün')).length, [customTasks]);
@@ -100,9 +107,7 @@ const Sidebar = ({
   }, [sortedWeeks, searchQuery, selectedYear, selectedMonth]);
 
   const handleWeekClick = (e, id) => {
-    if (onTabChange) {
-      onTabChange('schedule');
-    }
+    handleTabClick('schedule');
     if (e.ctrlKey || e.metaKey) {
       if (selectedWeeks.includes(id)) {
         setSelectedWeeks(selectedWeeks.filter(wId => wId !== id));
@@ -132,8 +137,8 @@ const Sidebar = ({
     } else if (dialog.type === 'deleteCustomList') {
       await deleteCustomList(dialog.payload.id);
       if (onRefreshData) onRefreshData();
-      if (activeTab === dialog.payload.id && onTabChange) {
-        onTabChange('smart_all');
+      if (activeTab === dialog.payload.id) {
+        handleTabClick('smart_all');
       }
     } else if (dialog.type === 'rename') {
       if (inputValue && inputValue.trim()) {
@@ -196,73 +201,77 @@ const Sidebar = ({
   };
 
   return (
-    <div className="sidebar no-print">
-      {/* SMART SYSTEM CATEGORIES (MS To-Do Top Items) */}
-      <div className="sidebar-section smart-views-section">
-        <button 
-          className={`sidebar-nav-item ${activeTab === 'smart_myday' ? 'active' : ''}`}
-          onClick={() => onTabChange && onTabChange('smart_myday')}
-        >
-          <div className="nav-item-left">
-            <Sun size={18} className="icon-myday" />
-            <span>Günüm</span>
-          </div>
-          {myDayCount > 0 && <span className="nav-badge">{myDayCount}</span>}
-        </button>
+    <>
+      {isMobileDrawerOpen && (
+        <div className="mobile-drawer-overlay no-print" onClick={onCloseMobileDrawer} />
+      )}
+      <div className={`sidebar no-print ${isMobileDrawerOpen ? 'mobile-drawer-open' : ''}`}>
+        {/* SMART SYSTEM CATEGORIES (MS To-Do Top Items) */}
+        <div className="sidebar-section smart-views-section">
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'smart_myday' ? 'active' : ''}`}
+            onClick={() => handleTabClick('smart_myday')}
+          >
+            <div className="nav-item-left">
+              <Sun size={18} className="icon-myday" />
+              <span>Günüm</span>
+            </div>
+            {myDayCount > 0 && <span className="nav-badge">{myDayCount}</span>}
+          </button>
 
-        <button 
-          className={`sidebar-nav-item ${activeTab === 'smart_important' ? 'active' : ''}`}
-          onClick={() => onTabChange && onTabChange('smart_important')}
-        >
-          <div className="nav-item-left">
-            <Star size={18} className="icon-important" />
-            <span>Önemli</span>
-          </div>
-          {importantCount > 0 && <span className="nav-badge">{importantCount}</span>}
-        </button>
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'smart_important' ? 'active' : ''}`}
+            onClick={() => handleTabClick('smart_important')}
+          >
+            <div className="nav-item-left">
+              <Star size={18} className="icon-important" />
+              <span>Önemli</span>
+            </div>
+            {importantCount > 0 && <span className="nav-badge">{importantCount}</span>}
+          </button>
 
-        <button 
-          className={`sidebar-nav-item ${activeTab === 'smart_planned' ? 'active' : ''}`}
-          onClick={() => onTabChange && onTabChange('smart_planned')}
-        >
-          <div className="nav-item-left">
-            <Calendar size={18} className="icon-planned" />
-            <span>Planlanan</span>
-          </div>
-          {plannedCount > 0 && <span className="nav-badge">{plannedCount}</span>}
-        </button>
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'smart_planned' ? 'active' : ''}`}
+            onClick={() => handleTabClick('smart_planned')}
+          >
+            <div className="nav-item-left">
+              <Calendar size={18} className="icon-planned" />
+              <span>Planlanan</span>
+            </div>
+            {plannedCount > 0 && <span className="nav-badge">{plannedCount}</span>}
+          </button>
 
-        <button 
-          className={`sidebar-nav-item ${activeTab === 'smart_all' ? 'active' : ''}`}
-          onClick={() => onTabChange && onTabChange('smart_all')}
-        >
-          <div className="nav-item-left">
-            <CheckSquare size={18} className="icon-tasks" />
-            <span>Görevler & Notlar</span>
-          </div>
-          {allTasksCount > 0 && <span className="nav-badge">{allTasksCount}</span>}
-        </button>
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'smart_all' ? 'active' : ''}`}
+            onClick={() => handleTabClick('smart_all')}
+          >
+            <div className="nav-item-left">
+              <CheckSquare size={18} className="icon-tasks" />
+              <span>Görevler & Notlar</span>
+            </div>
+            {allTasksCount > 0 && <span className="nav-badge">{allTasksCount}</span>}
+          </button>
 
-        <button 
-          className={`sidebar-nav-item ${activeTab === 'schedule' ? 'active' : ''}`}
-          onClick={() => onTabChange && onTabChange('schedule')}
-        >
-          <div className="nav-item-left">
-            <CalendarDays size={18} className="icon-schedule" />
-            <span>Haftalık Planım (Tablo)</span>
-          </div>
-        </button>
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'schedule' ? 'active' : ''}`}
+            onClick={() => handleTabClick('schedule')}
+          >
+            <div className="nav-item-left">
+              <CalendarDays size={18} className="icon-schedule" />
+              <span>Haftalık Planım (Tablo)</span>
+            </div>
+          </button>
 
-        <button 
-          className={`sidebar-nav-item ${activeTab === 'details' ? 'active' : ''}`}
-          onClick={() => onTabChange && onTabChange('details')}
-        >
-          <div className="nav-item-left">
-            <BookOpen size={18} className="icon-details" />
-            <span>Ders Detayları & Müfredat</span>
-          </div>
-        </button>
-      </div>
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'details' ? 'active' : ''}`}
+            onClick={() => handleTabClick('details')}
+          >
+            <div className="nav-item-left">
+              <BookOpen size={18} className="icon-details" />
+              <span>Ders Detayları & Müfredat</span>
+            </div>
+          </button>
+        </div>
 
       <div className="sidebar-divider" />
 
@@ -428,14 +437,15 @@ const Sidebar = ({
           </div>
         )}
       </div>
-
-      <DialogModal 
-        isOpen={dialog.isOpen}
-        {...getDialogProps()}
-        onConfirm={handleConfirmAction}
-        onCancel={() => setDialog({ isOpen: false, type: null, payload: null })}
-      />
     </div>
+
+    <DialogModal 
+      isOpen={dialog.isOpen}
+      {...getDialogProps()}
+      onConfirm={handleConfirmAction}
+      onCancel={() => setDialog({ isOpen: false, type: null, payload: null })}
+    />
+  </>
   );
 };
 

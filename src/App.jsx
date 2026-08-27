@@ -48,6 +48,7 @@ function App() {
   const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null });
 
@@ -324,6 +325,7 @@ function App() {
 
   return (
     <div className="app-layout">
+      <PwaBanner />
       <Sidebar 
         weeks={weeks}
         currentWeekId={currentWeekId}
@@ -339,6 +341,8 @@ function App() {
         customLists={customLists}
         customTasks={customTasks}
         onRefreshData={refreshCustomData}
+        isMobileDrawerOpen={isMobileDrawerOpen}
+        onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
       />
       <div className="app-container">
         {/* HEADER ONLY ON SCHEDULE/DETAILS TABS, OR CUSTOM HEADER BAR */}
@@ -532,6 +536,13 @@ function App() {
       {currentWeekId && (
         <DetailedReport weekId={currentWeekId} weekName={currentWeekName} />
       )}
+
+      <MobileNav 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onToggleSidebarDrawer={() => setIsMobileDrawerOpen(prev => !prev)}
+        customTasks={customTasks}
+      />
     </div>
   );
 }

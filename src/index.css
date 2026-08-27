@@ -3366,6 +3366,225 @@ body {
   padding-left: 1.25rem;
 }
 
+/* HIDE MOBILE COMPONENTS ON DESKTOP */
+@media (min-width: 769px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+  .pwa-mobile-banner {
+    display: none !important;
+  }
+  .mobile-drawer-overlay {
+    display: none !important;
+  }
+}
+
+/* MOBILE RESPONSIVE & PWA NATIVE STYLES */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+    padding-bottom: 75px; /* Space for Mobile Bottom Nav */
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* HIDE DESKTOP SIDEBAR & CONVERT TO MOBILE OVERLAY DRAWER */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -310px;
+    width: 290px;
+    height: 100vh;
+    z-index: 1200;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.25);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--card-bg, #ffffff);
+    overflow-y: auto;
+    border-right: 1px solid var(--border-color);
+  }
+
+  [data-theme="dark"] .sidebar {
+    background: #1e293b;
+  }
+
+  .sidebar.mobile-drawer-open {
+    left: 0;
+  }
+
+  .mobile-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 1100;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* MOBILE BOTTOM NAVIGATION BAR */
+  .mobile-bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background: var(--card-bg, #ffffff);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  [data-theme="dark"] .mobile-bottom-nav {
+    background: #1e293b;
+  }
+
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-nav-btn.active {
+    color: #2563eb;
+    font-weight: 800;
+  }
+
+  [data-theme="dark"] .mobile-nav-btn.active {
+    color: #60a5fa;
+  }
+
+  .mobile-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-badge {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  /* PWA BANNER STYLES */
+  .pwa-mobile-banner {
+    position: fixed;
+    bottom: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 92%;
+    max-width: 440px;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 0.95rem 1.15rem;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(37, 99, 235, 0.4);
+    z-index: 1050;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .pwa-banner-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+  }
+
+  .pwa-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .pwa-banner-icon {
+    font-size: 1.8rem;
+  }
+
+  .pwa-banner-text h3 {
+    margin: 0 0 3px 0;
+    font-size: 0.98rem;
+    font-weight: 800;
+  }
+
+  .pwa-banner-text p {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    opacity: 0.95;
+  }
+
+  /* CONTAINER ADJUSTMENTS FOR MOBILE TOUCH */
+  .task-list-view-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .task-header-title {
+    font-size: 1.65rem;
+  }
+
+  .add-task-card {
+    padding: 0.85rem 1rem;
+  }
+
+  .add-task-input {
+    font-size: 1.05rem;
+  }
+
+  .task-item-card {
+    padding: 0.85rem 1rem;
+  }
+
+  .task-item-title {
+    font-size: 1.05rem;
+  }
+
+  .top-global-bar {
+    padding: 0.75rem 1rem;
+  }
+
+  .bar-actions-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 
 
 
