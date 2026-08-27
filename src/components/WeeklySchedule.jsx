@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Clock, ChevronLeft, ChevronRight, ChevronDown, Calendar, Check, PlusCircle, CheckSquare } from 'lucide-react';
+import { Plus, Trash2, Clock, ChevronLeft, ChevronRight, ChevronDown, Calendar, Check, PlusCircle, CheckSquare, ArrowUp, ArrowDown, MoreVertical } from 'lucide-react';
 import { getScheduleForWeek, saveScheduleForWeek, generateId } from '../utils/storage';
 import SlotDetailModal from './SlotDetailModal';
 import QuickTimePickerModal from './QuickTimePickerModal';
+import SlotActionModal from './SlotActionModal';
 import DialogModal from './DialogModal';
 import confetti from 'canvas-confetti';
 
@@ -15,9 +16,11 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
 
   // Quick time picker state for Red Region (07:00)
   const [quickTimeTarget, setQuickTimeTarget] = useState(null);
+  const [actionModalTarget, setActionModalTarget] = useState(null);
 
   const [draggedSlot, setDraggedSlot] = useState(null);
   const [dragOverDay, setDragOverDay] = useState(null);
+  const [dragOverSlotId, setDragOverSlotId] = useState(null);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -38,18 +41,8 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
     slotTouchTimerRef.current = setTimeout(() => {
       isLongPressFiredRef.current = true;
       if (navigator.vibrate) navigator.vibrate(40);
-      setIsSelectMode(true);
-      setSelectedSlots(prev => {
-        const exists = prev.find(s => s.id === slot.id);
-        if (exists) {
-          const next = prev.filter(s => s.id !== slot.id);
-          if (next.length === 0) setIsSelectMode(false);
-          return next;
-        } else {
-          return [...prev, { day, id: slot.id }];
-        }
-      });
-    }, 400);
+      setActionModalTarget({ day, slot });
+    }, 380);
   };
 
   const cancelSlotLongPress = () => {
@@ -57,6 +50,58 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
       clearTimeout(slotTouchTimerRef.current);
       slotTouchTimerRef.current = null;
     }
+  };
+
+  const handleMoveSlotUpDown = async (day, slotId, direction) => {
+    const list = [...(schedule[day] || [])];
+    const index = list.findIndex(s => s.id === slotId);
+    if (index === -1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+
+    const temp = list[index];
+    list[index] = list[targetIndex];
+    list[targetIndex] = temp;
+
+    const newSchedule = {
+      ...schedule,
+      [day]: list
+    };
+    await handleSaveSchedule(newSchedule);
+  };
+
+  const handleMoveSlotToDay = async (sourceDay, slotId, targetDay) => {
+    if (sourceDay === targetDay) return;
+    const slot = schedule[sourceDay].find(s => s.id === slotId);
+    if (!slot) return;
+
+    const newSourceList = schedule[sourceDay].filter(s => s.id !== slotId);
+    const newTargetList = [...(schedule[targetDay] || []), slot];
+
+    const newSchedule = {
+      ...schedule,
+      [sourceDay]: newSourceList,
+      [targetDay]: newTargetList
+    };
+    await handleSaveSchedule(newSchedule);
+  };
+
+  const handleCopySlotToDay = async (sourceDay, slotId, targetDay) => {
+    const slot = schedule[sourceDay].find(s => s.id === slotId);
+    if (!slot) return;
+
+    const copiedSlot = {
+      ...slot,
+      id: generateId()
+    };
+
+    const newTargetList = [...(schedule[targetDay] || []), copiedSlot];
+    const newSchedule = {
+      ...schedule,
+      [targetDay]: newTargetList
+    };
+    await handleSaveSchedule(newSchedule);
   };
 
   const getCurrentTodayName = () => {
@@ -234,35 +279,48 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
   };
 
   const handleDragEnd = (e) => {
-    e.target.classList.remove('dragging');
+    if (e.target && e.target.classList) e.target.classList.remove('dragging');
     setDraggedSlot(null);
     setDragOverDay(null);
+    setDragOverSlotId(null);
   };
 
   const handleDragOver = (e, day) => {
     e.preventDefault();
-    if (draggedSlot && draggedSlot.day !== day) {
+    if (draggedSlot) {
       setDragOverDay(day);
     }
   };
 
-  const handleDrop = async (e, targetDay) => {
+  const handleDrop = async (e, targetDay, targetSlotIndex = null) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverDay(null);
+    setDragOverSlotId(null);
     
-    if (!draggedSlot || draggedSlot.day === targetDay) {
-      return;
+    if (!draggedSlot) return;
+
+    const { day: sourceDay, slot: sourceSlot } = draggedSlot;
+    let newSchedule = { ...schedule };
+
+    if (sourceDay === targetDay) {
+      const list = [...(schedule[sourceDay] || [])];
+      const currentIndex = list.findIndex(s => s.id === sourceSlot.id);
+      if (currentIndex !== -1) {
+        list.splice(currentIndex, 1);
+        const insertIndex = targetSlotIndex !== null ? targetSlotIndex : list.length;
+        list.splice(insertIndex, 0, sourceSlot);
+        newSchedule[sourceDay] = list;
+      }
+    } else {
+      const sourceList = (schedule[sourceDay] || []).filter(item => item.id !== sourceSlot.id);
+      const targetList = [...(schedule[targetDay] || [])];
+      const insertIndex = targetSlotIndex !== null ? targetSlotIndex : targetList.length;
+      targetList.splice(insertIndex, 0, sourceSlot);
+
+      newSchedule[sourceDay] = sourceList;
+      newSchedule[targetDay] = targetList;
     }
-
-    const { day: sourceDay, slot } = draggedSlot;
-    const newSourceList = schedule[sourceDay].filter(item => item.id !== slot.id);
-    const newTargetList = [...schedule[targetDay], slot];
-
-    const newSchedule = {
-      ...schedule,
-      [sourceDay]: newSourceList,
-      [targetDay]: newTargetList
-    };
 
     await handleSaveSchedule(newSchedule);
   };
@@ -353,12 +411,15 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
           >
           <div className="day-title">{day}</div>
           
-          {(Array.isArray(schedule[day]) ? schedule[day] : []).map((slot) => {
+          {(Array.isArray(schedule[day]) ? schedule[day] : []).map((slot, slotIndex) => {
             const isSelected = selectedSlots.find(s => s.id === slot.id);
+            const totalSlots = schedule[day].length;
+            const isDragTarget = dragOverSlotId === slot.id;
+
             return (
             <div 
               key={slot.id} 
-              className={`time-slot color-${slot.color || 'gray'} ${isSelected ? 'selected' : ''} ${slot.completed ? 'completed-slot' : ''}`} 
+              className={`time-slot color-${slot.color || 'gray'} ${isSelected ? 'selected' : ''} ${slot.completed ? 'completed-slot' : ''} ${isDragTarget ? 'drag-over-slot' : ''}`} 
               onClick={(e) => handleSlotClick(e, day, slot)}
               onTouchStart={() => startSlotLongPress(day, slot)}
               onTouchEnd={cancelSlotLongPress}
@@ -366,8 +427,14 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
               draggable
               onDragStart={(e) => handleDragStart(e, day, slot)}
               onDragEnd={handleDragEnd}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragOverSlotId(slot.id);
+              }}
+              onDrop={(e) => handleDrop(e, day, slotIndex)}
             >
-              {/* ORANGE & PURPLE AREAS: Actions (Checkbox & Trash Icon) */}
+              {/* ORANGE & PURPLE AREAS: Actions (Checkbox, Reorder Arrows & Trash Icon) */}
               <div className="slot-actions no-print">
                 <input 
                   type="checkbox" 
@@ -383,6 +450,45 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
                   onChange={() => toggleSlotCompletion(day, slot.id)}
                   title="Tamamlandı"
                 />
+
+                <button
+                  type="button"
+                  className="reorder-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMoveSlotUpDown(day, slot.id, 'up');
+                  }}
+                  disabled={slotIndex === 0}
+                  title="Yukarı Taşı"
+                >
+                  <ArrowUp size={12} />
+                </button>
+
+                <button
+                  type="button"
+                  className="reorder-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMoveSlotUpDown(day, slot.id, 'down');
+                  }}
+                  disabled={slotIndex === totalSlots - 1}
+                  title="Aşağı Taşı"
+                >
+                  <ArrowDown size={12} />
+                </button>
+
+                <button
+                  type="button"
+                  className="more-actions-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActionModalTarget({ day, slot });
+                  }}
+                  title="Taşı / Kopyala / Sırala"
+                >
+                  <MoreVertical size={13} />
+                </button>
+
                 <button 
                   className="delete-btn"
                   onClick={(e) => {
@@ -395,7 +501,7 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
                   }}
                   title="Etkinliği Sil"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={13} />
                 </button>
               </div>
               
@@ -464,6 +570,32 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
             setEditingSlot(null);
             setEditingDay(null);
             setQuickTimeTarget({ slot, day });
+          }}
+        />
+      )}
+
+      {/* SLOT ACTION MODAL (MOBILE REORDER & MOVE/COPY OPTIONS) */}
+      {actionModalTarget && (
+        <SlotActionModal
+          day={actionModalTarget.day}
+          slot={actionModalTarget.slot}
+          slotIndex={(schedule[actionModalTarget.day] || []).findIndex(s => s.id === actionModalTarget.slot.id)}
+          totalSlotsInDay={(schedule[actionModalTarget.day] || []).length}
+          onClose={() => setActionModalTarget(null)}
+          onMoveUp={handleMoveSlotUpDown}
+          onMoveDown={handleMoveSlotUpDown}
+          onMoveToDay={handleMoveSlotToDay}
+          onCopyToDay={handleCopySlotToDay}
+          onEdit={() => {
+            const { day, slot } = actionModalTarget;
+            setActionModalTarget(null);
+            setEditingSlot(slot);
+            setEditingDay(day);
+          }}
+          onDelete={() => {
+            const { day, slot } = actionModalTarget;
+            setActionModalTarget(null);
+            requestDelete(day, slot.id);
           }}
         />
       )}

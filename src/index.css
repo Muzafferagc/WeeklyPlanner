@@ -4791,6 +4791,115 @@ body.drawer-open-lock {
   }
 }
 
+/* SLOT REORDER & MOBILE SLOT ACTION MODAL STYLES (v3.34.0) */
+.reorder-btn, .more-actions-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #64748b);
+  padding: 0.15rem 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.reorder-btn:hover, .more-actions-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-color);
+}
+
+.reorder-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.time-slot.drag-over-slot {
+  border: 2px dashed #2563eb !important;
+  background: rgba(37, 99, 235, 0.12) !important;
+  transform: translateY(-2px);
+}
+
+.slot-action-modal-content {
+  max-width: 440px !important;
+  width: 92% !important;
+  border-radius: 20px !important;
+  padding: 1.25rem !important;
+}
+
+.slot-action-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.slot-action-subtitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-color, #2563eb);
+}
+
+.slot-action-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 0.45rem;
+}
+
+.slot-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.slot-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg, #ffffff);
+  color: var(--text-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.slot-action-btn:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.slot-action-btn.active-action {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.slot-action-btn.danger-action {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.slot-action-btn.danger-action:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+}
+
+.day-picker-select-wrapper {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
 
 
 
