@@ -4900,6 +4900,61 @@ body.drawer-open-lock {
   border: 1px solid var(--border-color);
 }
 
+/* ==========================================================================
+   GLOBAL MOBILE MODAL LAYER & VIEWPORT ACCESSIBILITY FIXES (v3.35.0)
+   ========================================================================== */
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 50000 !important; /* ALWAYS HIGHER THAN MOBILE BOTTOM NAV (10000) */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-end !important; /* Clean bottom float on mobile */
+    padding: 0.75rem 0.75rem calc(80px + env(safe-area-inset-bottom, 0px)) 0.75rem !important; /* 80px space for bottom nav */
+  }
+
+  .modal-content {
+    width: 100% !important;
+    max-width: 480px !important;
+    max-height: 78vh !important;
+    max-height: 78dvh !important;
+    overflow-y: auto !important;
+    border-radius: 24px !important;
+    margin-bottom: 0 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3) !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .slot-action-modal-content {
+    max-height: 75vh !important;
+    max-height: 75dvh !important;
+    overflow-y: auto !important;
+  }
+
+  .modal-handwriting-title {
+    font-family: var(--font-handwriting, 'Caveat', cursive) !important;
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    color: var(--text-color) !important;
+  }
+}
+
 
 
 

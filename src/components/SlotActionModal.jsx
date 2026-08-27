@@ -30,11 +30,11 @@ const SlotActionModal = ({
   };
 
   return (
-    <div className="modal-overlay no-print" onClick={onClose}>
+    <div className="modal-overlay mobile-high-overlay no-print" onClick={onClose}>
       <div className="modal-content slot-action-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="slot-action-header-info">
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Etkinlik Seçenekleri</h3>
+            <h3 className="modal-handwriting-title">Etkinlik Seçenekleri</h3>
             <span className="slot-action-subtitle">{slot.activity || 'Etkinlik'} ({day} - {slot.time})</span>
           </div>
           <button className="close-btn" onClick={onClose}><X size={20} /></button>
@@ -71,7 +71,7 @@ const SlotActionModal = ({
             <button 
               type="button" 
               className={`slot-action-btn ${targetAction === 'move' ? 'active-action' : ''}`}
-              onClick={() => setTargetAction('move')}
+              onClick={() => setTargetAction(targetAction === 'move' ? null : 'move')}
             >
               <MoveRight size={18} />
               <span>Başka Güne Taşı</span>
@@ -80,7 +80,7 @@ const SlotActionModal = ({
             <button 
               type="button" 
               className={`slot-action-btn ${targetAction === 'copy' ? 'active-action' : ''}`}
-              onClick={() => setTargetAction('copy')}
+              onClick={() => setTargetAction(targetAction === 'copy' ? null : 'copy')}
             >
               <Copy size={18} />
               <span>Başka Güne Kopyala</span>
@@ -96,16 +96,17 @@ const SlotActionModal = ({
                 value={selectedTargetDay} 
                 onChange={(e) => setSelectedTargetDay(e.target.value)}
                 className="modal-select-field"
+                style={{ width: '100%', padding: '0.55rem', borderRadius: '10px', border: '1px solid var(--border-color)', fontWeight: 700 }}
               >
                 {WEEK_DAYS.map(d => (
-                  <option key={d} value={d}>{d} {d === day ? '(Mevcut)' : ''}</option>
+                  <option key={d} value={d}>{d} {d === day ? '(Mevcut Gün)' : ''}</option>
                 ))}
               </select>
               <button 
                 type="button" 
                 className="btn-primary" 
                 onClick={handleExecuteDayAction}
-                style={{ marginTop: '0.65rem', width: '100%', padding: '0.6rem' }}
+                style={{ marginTop: '0.65rem', width: '100%', padding: '0.65rem', borderRadius: '12px', fontWeight: 800 }}
               >
                 <CheckCircle2 size={16} /> {targetAction === 'move' ? 'Seçili Güne Taşı' : 'Seçili Güne Kopyala'}
               </button>
@@ -113,7 +114,7 @@ const SlotActionModal = ({
           )}
 
           {/* EDIT & DELETE */}
-          <div className="slot-action-section-title" style={{ marginTop: '1rem' }}>DÜZENLEME</div>
+          <div className="slot-action-section-title" style={{ marginTop: '1rem' }}>DÜZENLEME & SİLME</div>
           <div className="slot-action-grid">
             <button 
               type="button" 
