@@ -109,6 +109,7 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
             <div className="detail-title-input-wrapper">
               <input
                 type="text"
+                autoFocus
                 value={activity}
                 onChange={e => setActivity(e.target.value)}
                 className="slot-activity-edit-title"
