@@ -16,6 +16,7 @@ import PwaBanner from './components/PwaBanner';
 import CreateWeekModal from './components/CreateWeekModal';
 import { Calendar } from 'lucide-react';
 import { startAlarmChimeLoop, stopAlarmChime, triggerSystemNotification } from './utils/audioAlarm';
+import { APP_VERSION } from './config/version';
 import { 
   getWeeks, 
   createNewWeek, 
@@ -454,7 +455,10 @@ function App() {
           <header className="header no-print">
             <div className="header-top">
               <div>
-                <h1>{activeTab === 'details' ? 'Ders & Müfredat Yol Haritası' : 'Haftalık Planım'}</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <h1 style={{ margin: 0 }}>{activeTab === 'details' ? 'Ders & Müfredat Yol Haritası' : 'Haftalık Planım'}</h1>
+                  <span className="app-version-badge" title="Mevcut Güncel Sürüm">{APP_VERSION}</span>
+                </div>
                 {activeTab === 'schedule' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <p className="subtitle" style={{ margin: 0 }}>{currentWeekName}</p>

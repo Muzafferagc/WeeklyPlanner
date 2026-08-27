@@ -4657,6 +4657,49 @@ body {
   transform: scale(0.95);
 }
 
+/* VERSION BADGE STYLES */
+.app-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  padding: 0.2rem 0.6rem !important;
+  border-radius: 20px !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
+  margin-left: 0.5rem !important;
+  vertical-align: middle !important;
+  letter-spacing: 0.5px !important;
+}
+
+.sidebar-app-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.6rem;
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 12px;
+  border: 1px dashed rgba(37, 99, 235, 0.3);
+}
+
+.brand-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text-color);
+}
+
+.sidebar-version-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--primary-color, #2563eb);
+  color: #ffffff;
+  padding: 0.18rem 0.5rem;
+  border-radius: 10px;
+}
+
 
 
 

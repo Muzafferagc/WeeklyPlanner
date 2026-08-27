@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import DialogModal from './DialogModal';
 import { createCustomList, deleteCustomList, renameCustomList } from '../utils/storage';
+import { APP_VERSION } from '../config/version';
 
 const MONTH_NAMES = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -206,6 +207,12 @@ const Sidebar = ({
         <div className="mobile-drawer-overlay no-print" onClick={onCloseMobileDrawer} />
       )}
       <div className={`sidebar no-print ${isMobileDrawerOpen ? 'mobile-drawer-open' : ''}`}>
+        {/* BRAND & VERSION HEADER */}
+        <div className="sidebar-app-brand">
+          <span className="brand-title">Haftalık Planlayıcı</span>
+          <span className="sidebar-version-badge" title="Uygulama Sürümü">{APP_VERSION}</span>
+        </div>
+
         {/* SMART SYSTEM CATEGORIES (MS To-Do Top Items) */}
         <div className="sidebar-section smart-views-section">
           <button 
