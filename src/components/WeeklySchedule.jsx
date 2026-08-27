@@ -113,8 +113,12 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
 
   useEffect(() => {
     loadSchedule();
-    setActiveMobileDay(getCurrentTodayName());
   }, [weekId, refreshTrigger]);
+
+  // Reset active mobile day tab ONLY when switching weeks!
+  useEffect(() => {
+    setActiveMobileDay(getCurrentTodayName());
+  }, [weekId]);
 
   const loadSchedule = async () => {
     const data = await getScheduleForWeek(weekId);
