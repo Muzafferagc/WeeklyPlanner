@@ -19,6 +19,12 @@ const WeeklySchedule = ({ weekId, onScheduleChange }) => {
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
 
+  const [activeMobileDay, setActiveMobileDay] = useState(() => {
+    const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+    const todayName = dayNames[new Date().getDay()];
+    return (todayName && todayName !== "Pazar") ? todayName : "Pazartesi";
+  });
+
   useEffect(() => {
     loadSchedule();
   }, [weekId]);
@@ -219,14 +225,32 @@ const WeeklySchedule = ({ weekId, onScheduleChange }) => {
   const days = Object.keys(schedule);
 
   return (
-    <div className="schedule-grid">
-      {days.map(day => (
-        <div 
-          key={day} 
-          className={`day-column ${dragOverDay === day ? 'drag-over' : ''}`}
-          onDragOver={(e) => handleDragOver(e, day)}
-          onDrop={(e) => handleDrop(e, day)}
-        >
+    <div className="schedule-container-wrapper">
+      {/* MOBILE iOS DAY SEGMENTED CAROUSEL */}
+      <div className="mobile-schedule-day-tabs no-print">
+        {days.map(day => (
+          <button
+            key={day}
+            type="button"
+            className={`mobile-day-tab-pill ${activeMobileDay === day ? 'active' : ''}`}
+            onClick={() => setActiveMobileDay(day)}
+          >
+            <span>{day}</span>
+            {schedule[day] && schedule[day].length > 0 && (
+              <span className="mobile-day-count">{schedule[day].length}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="schedule-grid">
+        {days.map(day => (
+          <div 
+            key={day} 
+            className={`day-column ${activeMobileDay === day ? 'mobile-active-day' : ''} ${dragOverDay === day ? 'drag-over' : ''}`}
+            onDragOver={(e) => handleDragOver(e, day)}
+            onDrop={(e) => handleDrop(e, day)}
+          >
           <div className="day-title">{day}</div>
           
           {schedule[day].map((slot) => {
@@ -383,6 +407,7 @@ const WeeklySchedule = ({ weekId, onScheduleChange }) => {
         onConfirm={confirmDialog.type === 'singleDelete' ? handleConfirmSingleDelete : handleConfirmMultiDelete}
         onCancel={() => setConfirmDialog({ isOpen: false })}
       />
+    </div>
     </div>
   );
 };

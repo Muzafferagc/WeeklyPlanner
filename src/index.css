@@ -3855,6 +3855,219 @@ body {
   font-weight: 700;
 }
 
+/* NATIVE IOS MOBILE SCHEDULE & CURRICULUM ROADMAP SYSTEM */
+.mobile-schedule-day-tabs {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-schedule-day-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem 0.2rem !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 0.85rem !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  .mobile-day-tab-pill {
+    padding: 0.55rem 1rem !important;
+    border-radius: 20px !important;
+    background: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--border-color) !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    cursor: pointer !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03) !important;
+  }
+
+  .mobile-day-tab-pill.active {
+    background: var(--primary-color, #2563eb) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color, #2563eb) !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+  }
+
+  .mobile-day-count {
+    background: rgba(0, 0, 0, 0.08);
+    color: inherit;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.1rem 0.45rem;
+    border-radius: 10px;
+  }
+
+  .mobile-day-tab-pill.active .mobile-day-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+  }
+
+  .schedule-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .day-column {
+    display: none !important;
+  }
+
+  .day-column.mobile-active-day {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    background: var(--card-bg, #ffffff) !important;
+    border-radius: 16px !important;
+    padding: 0.85rem !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  .day-title {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    padding-bottom: 0.6rem !important;
+    border-bottom: 2px solid var(--primary-color, #2563eb) !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .time-slot {
+    margin-bottom: 0.65rem !important;
+    padding: 0.75rem 0.85rem !important;
+    border-radius: 14px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* COURSE DETAILS MOBILE RESPONSIVE CARDS */
+  .course-tabs-bar {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .course-tab-pill {
+    padding: 0.55rem 0.95rem !important;
+    font-size: 0.88rem !important;
+    border-radius: 16px !important;
+  }
+
+  .modern-course-banner {
+    padding: 1rem !important;
+    border-radius: 18px !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .banner-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .banner-title {
+    font-size: 1.45rem !important;
+  }
+
+  .banner-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+
+  .stat-card {
+    padding: 0.65rem 0.85rem !important;
+    border-radius: 12px !important;
+  }
+
+  .progress-card {
+    grid-column: span 2 !important;
+  }
+
+  .simple-quick-add-card {
+    padding: 0.85rem 0.95rem !important;
+    border-radius: 16px !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .quick-add-inputs {
+    flex-direction: column !important;
+    gap: 0.6rem !important;
+  }
+
+  .quick-add-title-input {
+    width: 100% !important;
+  }
+
+  .quick-date-picker-box {
+    width: 100% !important;
+  }
+
+  .quick-add-submit-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.65rem !important;
+  }
+
+  .modern-controls-bar {
+    flex-direction: column !important;
+    gap: 0.65rem !important;
+  }
+
+  .modern-search-box {
+    width: 100% !important;
+  }
+
+  /* TOPICS TABLE TO iOS CARDS ON MOBILE */
+  .topics-table-container {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .topics-table {
+    display: block !important;
+  }
+
+  .topics-table thead {
+    display: none !important;
+  }
+
+  .topics-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.85rem !important;
+  }
+
+  .topics-table tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    padding: 0.95rem !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04) !important;
+    gap: 0.5rem !important;
+  }
+
+  .topics-table td {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.25rem 0 !important;
+    border-bottom: 1px dashed var(--border-color) !important;
+  }
+
+  .topics-table td:last-child {
+    border-bottom: none !important;
+    padding-top: 0.5rem !important;
+  }
+}
+
 
 
 
