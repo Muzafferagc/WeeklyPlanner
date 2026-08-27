@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Plus, CalendarDays, Trash2, Edit3, Download, Settings, Search, Filter, BookOpen,
   Sun, Star, Calendar, CheckSquare, ListTodo, ShoppingCart, Brain, Folder, Compass,
-  Target, BookMarked, PiggyBank, List, ChevronDown, ChevronRight, User, Share2
+  Target, BookMarked, PiggyBank, List, ChevronDown, ChevronRight, User, Share2, RotateCcw
 } from 'lucide-react';
 import DialogModal from './DialogModal';
 import { createCustomList, deleteCustomList, renameCustomList } from '../utils/storage';
@@ -42,6 +42,7 @@ const Sidebar = ({
   customLists = [],
   customTasks = [],
   onRefreshData,
+  onResetCurrentWeek,
   isMobileDrawerOpen,
   onCloseMobileDrawer
 }) => {
@@ -446,6 +447,14 @@ const Sidebar = ({
 
             <button className="new-week-btn" onClick={onCreateWeek}>
               <Plus size={16} /> Yeni Hafta Oluştur
+            </button>
+            <button 
+              className="new-week-btn reset-week-btn-sidebar" 
+              onClick={() => { if (onCloseMobileDrawer) onCloseMobileDrawer(); if (onResetCurrentWeek) onResetCurrentWeek(); }}
+              style={{ marginTop: '0.5rem', background: 'rgba(217, 119, 6, 0.12)', color: '#d97706', border: '1px solid rgba(217, 119, 6, 0.3)', fontWeight: 700 }}
+              title="Aktif haftanızı Varsayılan Plan Şablonunuza döndürün"
+            >
+              <RotateCcw size={16} /> Mevcut Haftayı Sıfırla
             </button>
           </div>
         )}

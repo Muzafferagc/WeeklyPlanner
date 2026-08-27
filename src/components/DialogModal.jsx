@@ -26,7 +26,7 @@ const DialogModal = ({
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay mobile-high-overlay" style={{ zIndex: 60000 }}>
       <div className="dialog-content">
         <div className="dialog-header">
           <h3>{title}</h3>

@@ -416,6 +416,7 @@ function App() {
         customLists={customLists}
         customTasks={customTasks}
         onRefreshData={refreshCustomData}
+        onResetCurrentWeek={requestReset}
         isMobileDrawerOpen={isMobileDrawerOpen}
         onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
       />
@@ -514,8 +515,9 @@ function App() {
                 </button>
                 {activeTab === 'schedule' && (
                   <>
-                    <button className="print-btn reset-btn" onClick={requestReset} title="Varsayılana Sıfırla">
+                    <button className="print-btn reset-btn" onClick={requestReset} title="Mevcut Haftayı Varsayılan Plana Sıfırla" style={{ color: '#d97706', borderColor: 'rgba(217, 119, 6, 0.4)' }}>
                       <RotateCcw size={18} />
+                      <span className="btn-text-responsive">Haftayı Sıfırla</span>
                     </button>
                     <button className="print-btn" onClick={handleDetailedPrint} title="Notlar ve görevlerle birlikte detaylı rapor yazdır">
                       <FileText size={18} />
