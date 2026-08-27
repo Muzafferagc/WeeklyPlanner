@@ -514,6 +514,9 @@ function App() {
             <WeeklySchedule 
               key={currentWeekId} 
               weekId={currentWeekId} 
+              weeks={weeks}
+              onSelectWeek={(id) => setCurrentWeekId(id)}
+              onCreateNewWeek={handleCreateWeek}
               refreshTrigger={syncRefreshKey}
               onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} 
             />
