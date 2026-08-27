@@ -113,6 +113,9 @@ function App() {
       setCurrentWeekId(loadedWeeks[0].id);
     }
     setLoading(false);
+    setTimeout(() => {
+      broadcastCurrentState();
+    }, 500);
   };
 
   const refreshCustomData = async () => {

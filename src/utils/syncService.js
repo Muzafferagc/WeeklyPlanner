@@ -31,13 +31,32 @@ export const setSyncRoom = (roomId) => {
   return cleanRoom;
 };
 
+export const fetchCloudState = async (roomId) => {
+  try {
+    const url = `${DEFAULT_FIREBASE_URL}/rooms/${roomId}.json`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.data && typeof json.data === 'object') {
+      return json.data;
+    }
+  } catch (e) {}
+  return null;
+};
+
 // Listen to Realtime Events via EventSource (Server-Sent Events)
 let activeEventSource = null;
 let isBroadcasting = false;
 
-export const subscribeToCloudSync = (roomId, onDataReceived) => {
+export const subscribeToCloudSync = async (roomId, onDataReceived) => {
   if (activeEventSource) {
     activeEventSource.close();
+  }
+
+  // Initial Fetch from Cloud Room on connect
+  const initialData = await fetchCloudState(roomId);
+  if (initialData) {
+    onDataReceived(initialData);
   }
 
   const streamUrl = `${DEFAULT_FIREBASE_URL}/rooms/${roomId}.json`;
