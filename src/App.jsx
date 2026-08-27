@@ -60,14 +60,16 @@ function App() {
     // Setup Realtime Cloud Sync Listener
     const room = getSyncRoom();
     subscribeToCloudSync(room, async (cloudData) => {
-      if (cloudData && typeof cloudData === 'object' && cloudData.weeks) {
-        await importData(JSON.stringify(cloudData));
-        const loadedWeeks = await getWeeks();
-        const loadedLists = await getCustomLists();
-        const loadedTasks = await getCustomTasks();
-        setWeeks(loadedWeeks);
-        setCustomLists(loadedLists);
-        setCustomTasks(loadedTasks);
+      if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
+        const res = await importData(JSON.stringify(cloudData));
+        if (res && res.success) {
+          const loadedWeeks = await getWeeks();
+          const loadedLists = await getCustomLists();
+          const loadedTasks = await getCustomTasks();
+          setWeeks(loadedWeeks);
+          setCustomLists(loadedLists);
+          setCustomTasks(loadedTasks);
+        }
       }
     });
   }, []);

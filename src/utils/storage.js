@@ -534,7 +534,7 @@ export const deleteCustomList = async (listId) => {
 
 export const getCustomTasks = async () => {
   let tasks = await localforage.getItem('custom_tasks');
-  if (!tasks || !Array.isArray(tasks)) {
+  if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
     tasks = JSON.parse(JSON.stringify(initialCustomTasks));
     await localforage.setItem('custom_tasks', tasks);
   }
@@ -626,10 +626,15 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
 
 export const importData = async (jsonData) => {
   try {
-    const data = JSON.parse(jsonData);
-    if (!data.weeks || !data.schedules) return false;
+    if (!jsonData) return false;
+    const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+
+    if (!data || !data.weeks || !Array.isArray(data.weeks) || data.weeks.length === 0 || !data.schedules) {
+      return false;
+    }
 
     const cleanWeeks = deduplicateWeeks(data.weeks);
+    if (cleanWeeks.length === 0) return false;
 
     await localforage.clear();
     await localforage.setItem('weeks', cleanWeeks);
@@ -642,11 +647,11 @@ export const importData = async (jsonData) => {
       await localforage.setItem('course_details_data', data.courseDetailsData);
     }
 
-    if (data.customLists) {
+    if (data.customLists && Array.isArray(data.customLists) && data.customLists.length > 0) {
       await localforage.setItem('custom_lists', data.customLists);
     }
 
-    if (data.customTasks) {
+    if (data.customTasks && Array.isArray(data.customTasks) && data.customTasks.length > 0) {
       await localforage.setItem('custom_tasks', data.customTasks);
     }
 
