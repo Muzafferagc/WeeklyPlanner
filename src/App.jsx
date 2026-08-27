@@ -11,6 +11,8 @@ import DialogModal from './components/DialogModal';
 import CopyWeekModal from './components/CopyWeekModal';
 import ChangeWeekDateModal from './components/ChangeWeekDateModal';
 import SyncModal from './components/SyncModal';
+import MobileNav from './components/MobileNav';
+import PwaBanner from './components/PwaBanner';
 import { Calendar } from 'lucide-react';
 import { 
   getWeeks, 
