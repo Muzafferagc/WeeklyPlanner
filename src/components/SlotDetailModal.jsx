@@ -97,22 +97,26 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         
         <div className="modal-header">
-          <div style={{ flex: 1 }}>
-            {/* Read-only time badge */}
-            <div className="detail-time-badge">
-              <Clock size={14} />
-              <span>{slot.time}</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className="detail-time-badge">
+                <Clock size={14} />
+                <span>{slot.time}</span>
+              </div>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Etkinlik / Ders Başlığı:</span>
             </div>
 
-            <input
-              type="text"
-              value={activity}
-              onChange={e => setActivity(e.target.value)}
-              className="slot-activity-edit-title"
-              placeholder="Etkinlik Adı..."
-            />
+            <div className="detail-title-input-wrapper">
+              <input
+                type="text"
+                value={activity}
+                onChange={e => setActivity(e.target.value)}
+                className="slot-activity-edit-title"
+                placeholder="Etkinlik veya Ders Adını Yazın..."
+              />
+            </div>
 
-            <div className="color-picker" style={{ marginTop: '0.5rem' }}>
+            <div className="color-picker" style={{ marginTop: '0.4rem' }}>
               {colors.map(c => (
                 <div 
                   key={c.name}
@@ -124,7 +128,7 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
               ))}
             </div>
           </div>
-          <button className="close-btn" onClick={onClose}><X size={24} /></button>
+          <button className="close-btn" onClick={onClose}><X size={22} /></button>
         </div>
 
         <div className="modal-tabs">

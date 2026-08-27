@@ -219,15 +219,27 @@ function App() {
     if (currentWeekId) {
       const defaultTemplate = await getDefaultScheduleTemplate();
       await saveScheduleForWeek(currentWeekId, defaultTemplate);
-      setConfirmDialog({ isOpen: false });
-      window.location.reload();
+      setConfirmDialog({ isOpen: false, type: null });
+      setSyncRefreshKey(prev => prev + 1);
+      await broadcastCurrentState();
+      confetti({
+        particleCount: 60,
+        spread: 50,
+        origin: { y: 0.7 }
+      });
     }
   };
 
   const handleApplyTemplateToWeek = async (template) => {
     if (currentWeekId && template) {
       await saveScheduleForWeek(currentWeekId, template);
-      window.location.reload();
+      setSyncRefreshKey(prev => prev + 1);
+      await broadcastCurrentState();
+      confetti({
+        particleCount: 60,
+        spread: 50,
+        origin: { y: 0.7 }
+      });
     }
   };
 

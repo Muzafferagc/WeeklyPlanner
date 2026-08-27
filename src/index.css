@@ -4550,6 +4550,39 @@ body {
   }
 }
 
+/* SLOT DETAIL MODAL TITLE INPUT STYLES */
+.detail-title-input-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.slot-activity-edit-title {
+  width: 100%;
+  font-family: 'Caveat', cursive, sans-serif !important;
+  font-size: 1.65rem !important;
+  font-weight: 700 !important;
+  color: var(--text-color, #2b2b2b) !important;
+  background: var(--bg-color, rgba(0, 0, 0, 0.03)) !important;
+  border: 2px dashed var(--border-color, #cbd5e1) !important;
+  border-radius: 12px !important;
+  padding: 0.4rem 0.85rem !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
+  margin-top: 0.2rem !important;
+}
+
+[data-theme="dark"] .slot-activity-edit-title {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.slot-activity-edit-title:focus {
+  border-color: var(--primary-color, #2563eb) !important;
+  border-style: solid !important;
+  background: var(--card-bg, #ffffff) !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+}
+
 
 
 

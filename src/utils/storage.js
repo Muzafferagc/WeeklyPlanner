@@ -555,19 +555,23 @@ export const importData = async (jsonData) => {
 
 
 export const updateWeekDate = async (weekId, chosenDateStr) => {
-  let weeks = await getWeeks();
-  const chosenDate = new Date(chosenDateStr);
-  const mondayDate = getMonday(chosenDate);
-  const newName = formatWeekString(mondayDate);
+  const weeks = await getWeeks();
+  const targetWeek = weeks.find(w => w.id === weekId);
+  if (!targetWeek) return weeks;
 
-  weeks = weeks.map(w => w.id === weekId ? {
-    ...w,
-    name: newName,
-    startDate: mondayDate.toISOString()
-  } : w);
+  const chosenMonday = getMonday(new Date(chosenDateStr));
+  targetWeek.startDate = chosenMonday.toISOString();
+  targetWeek.name = formatWeekString(chosenMonday);
 
-  await localforage.setItem('weeks', weeks);
-  return weeks;
+  const cleanWeeks = deduplicateWeeks(weeks);
+  await localforage.setItem('weeks', cleanWeeks);
+  return cleanWeeks;
 };
 
-
+export const resetAllData = async () => {
+  await localforage.clear();
+  localStorage.removeItem('weeklySchedule');
+  localStorage.removeItem('savedActiveWeekId');
+  const defaultWeeks = await getWeeks();
+  return defaultWeeks;
+};
