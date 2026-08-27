@@ -456,6 +456,13 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
           slot={editingSlot}
           onClose={() => { setEditingSlot(null); setEditingDay(null); }}
           onSave={handleModalSave}
+          onOpenTimePicker={() => {
+            const slot = editingSlot;
+            const day = editingDay;
+            setEditingSlot(null);
+            setEditingDay(null);
+            setQuickTimeTarget({ slot, day });
+          }}
         />
       )}
 

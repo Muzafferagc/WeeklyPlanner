@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, FileText, CheckSquare, Link as LinkIcon, Image as ImageIcon, Plus, Trash2, Clock, Bell } from 'lucide-react';
 import { requestNotificationPermissionOnce } from '../utils/audioAlarm';
 
-const SlotDetailModal = ({ slot, onClose, onSave }) => {
+const SlotDetailModal = ({ slot, onClose, onSave, onOpenTimePicker }) => {
   const [activeTab, setActiveTab] = useState('notes');
   const [activity, setActivity] = useState(slot.activity || '');
   const [notes, setNotes] = useState(slot.notes || '');
