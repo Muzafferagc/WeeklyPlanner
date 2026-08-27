@@ -58,14 +58,15 @@ function App() {
     loadApp();
   }, []);
 
+  const [syncRefreshKey, setSyncRefreshKey] = useState(0);
   const lastMutationTimeRef = React.useRef(0);
 
   useEffect(() => {
     // Setup Realtime Cloud Sync Listener
     const room = getSyncRoom();
     const handleSync = async (cloudData) => {
-      // If we made a local edit in the last 1.5 seconds, don't let incoming polling overwrite our local state!
-      if (Date.now() - lastMutationTimeRef.current < 1500) {
+      // If we made a local edit in the last 1.2 seconds, don't let incoming polling overwrite our local state!
+      if (Date.now() - lastMutationTimeRef.current < 1200) {
         return;
       }
       if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
@@ -77,6 +78,7 @@ function App() {
           setWeeks(loadedWeeks);
           setCustomLists(loadedLists);
           setCustomTasks(loadedTasks);
+          setSyncRefreshKey(prev => prev + 1);
         }
       }
     };
@@ -509,10 +511,20 @@ function App() {
 
         <main className="main-content-area">
           {activeTab === 'schedule' && currentWeekId && (
-            <WeeklySchedule key={currentWeekId} weekId={currentWeekId} onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} />
+            <WeeklySchedule 
+              key={currentWeekId} 
+              weekId={currentWeekId} 
+              refreshTrigger={syncRefreshKey}
+              onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} 
+            />
           )}
           {activeTab === 'details' && (
-            <CourseDetailsView weeks={weeks} currentWeekId={currentWeekId} />
+            <CourseDetailsView 
+              weeks={weeks} 
+              currentWeekId={currentWeekId} 
+              refreshTrigger={syncRefreshKey}
+              onDataChange={broadcastCurrentState}
+            />
           )}
           {activeTab !== 'schedule' && activeTab !== 'details' && (
             <TaskListView 

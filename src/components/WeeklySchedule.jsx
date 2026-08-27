@@ -6,7 +6,7 @@ import QuickTimePickerModal from './QuickTimePickerModal';
 import DialogModal from './DialogModal';
 import confetti from 'canvas-confetti';
 
-const WeeklySchedule = ({ weekId, onScheduleChange }) => {
+const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
   const [schedule, setSchedule] = useState(null);
   const [editingSlot, setEditingSlot] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
@@ -27,7 +27,7 @@ const WeeklySchedule = ({ weekId, onScheduleChange }) => {
 
   useEffect(() => {
     loadSchedule();
-  }, [weekId]);
+  }, [weekId, refreshTrigger]);
 
   const loadSchedule = async () => {
     const data = await getScheduleForWeek(weekId);

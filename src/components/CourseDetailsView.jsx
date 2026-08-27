@@ -52,7 +52,7 @@ const formatTurkishDate = (dateStr) => {
   }
 };
 
-export default function CourseDetailsView({ weeks, currentWeekId }) {
+export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, refreshTrigger }) {
   const [courses, setCourses] = useState([]);
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +88,7 @@ export default function CourseDetailsView({ weeks, currentWeekId }) {
 
   useEffect(() => {
     loadCoursesData();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadCoursesData = async () => {
     const data = await getCourseDetailsData();
@@ -102,6 +102,7 @@ export default function CourseDetailsView({ weeks, currentWeekId }) {
   const handleSaveCourses = async (newCourses) => {
     setCourses(newCourses);
     await saveCourseDetailsData(newCourses);
+    if (onDataChange) onDataChange();
   };
 
   // Quick Inline Add Topic (Çok Basit Konu Ekleme)
