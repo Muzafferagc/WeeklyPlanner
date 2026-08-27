@@ -1,2 +1,2 @@
-export const APP_VERSION = "v3.39.0";
-export const LAST_UPDATED = "27 Ağustos 2026 - 20:16";
+export const APP_VERSION = "v3.40.0";
+export const LAST_UPDATED = "27 Ağustos 2026 - 21:00";

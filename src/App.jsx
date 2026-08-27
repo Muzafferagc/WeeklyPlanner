@@ -239,6 +239,7 @@ function App() {
         }
       }
       await saveScheduleForWeek(currentWeekId, freshSchedule);
+      await updateProgress(currentWeekId);
       setSyncRefreshKey(prev => prev + 1);
       await broadcastCurrentState();
       try {
@@ -261,13 +262,16 @@ function App() {
         }
       }
       await saveScheduleForWeek(currentWeekId, freshSchedule);
+      await updateProgress(currentWeekId);
       setSyncRefreshKey(prev => prev + 1);
       await broadcastCurrentState();
-      confetti({
-        particleCount: 60,
-        spread: 50,
-        origin: { y: 0.7 }
-      });
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.7 }
+        });
+      } catch (e) {}
     }
   };
 
@@ -571,7 +575,7 @@ function App() {
         <main className="main-content-area">
           {activeTab === 'schedule' && currentWeekId && (
             <WeeklySchedule 
-              key={currentWeekId} 
+              key={`${currentWeekId}_${syncRefreshKey}`} 
               weekId={currentWeekId} 
               weeks={weeks}
               onSelectWeek={(id) => setCurrentWeekId(id)}
