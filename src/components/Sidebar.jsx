@@ -5,7 +5,7 @@ import {
   Target, BookMarked, PiggyBank, List, ChevronDown, ChevronRight, User, Share2
 } from 'lucide-react';
 import DialogModal from './DialogModal';
-import { createCustomList } from '../utils/storage';
+import { createCustomList, deleteCustomList, renameCustomList } from '../utils/storage';
 
 const MONTH_NAMES = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -126,6 +126,15 @@ const Sidebar = ({
     if (dialog.type === 'newList' && inputValue && inputValue.trim()) {
       await createCustomList(inputValue.trim());
       if (onRefreshData) onRefreshData();
+    } else if (dialog.type === 'renameCustomList' && inputValue && inputValue.trim()) {
+      await renameCustomList(dialog.payload.id, inputValue.trim());
+      if (onRefreshData) onRefreshData();
+    } else if (dialog.type === 'deleteCustomList') {
+      await deleteCustomList(dialog.payload.id);
+      if (onRefreshData) onRefreshData();
+      if (activeTab === dialog.payload.id && onTabChange) {
+        onTabChange('smart_all');
+      }
     } else if (dialog.type === 'rename') {
       if (inputValue && inputValue.trim()) {
         onRenameWeek(dialog.payload.id, inputValue.trim());
@@ -147,6 +156,20 @@ const Sidebar = ({
         type: "prompt",
         defaultValue: "",
         confirmText: "Oluştur"
+      };
+    } else if (dialog.type === 'renameCustomList') {
+      return {
+        title: "Listeyi Yeniden Adlandır",
+        message: "Yeni liste adını girin:",
+        type: "prompt",
+        defaultValue: dialog.payload?.name || "",
+        confirmText: "Kaydet"
+      };
+    } else if (dialog.type === 'deleteCustomList') {
+      return {
+        title: "Listeyi Sil",
+        message: `'${dialog.payload?.name}' listesini ve içindeki görevleri silmek istediğinize emin misiniz?`,
+        confirmText: "Evet, Sil"
       };
     } else if (dialog.type === 'rename') {
       return {
@@ -251,7 +274,7 @@ const Sidebar = ({
           const isActive = activeTab === list.id;
 
           return (
-            <button
+            <div
               key={list.id}
               className={`sidebar-nav-item custom-list-item ${isActive ? 'active' : ''}`}
               onClick={() => onTabChange && onTabChange(list.id)}
@@ -260,8 +283,36 @@ const Sidebar = ({
                 <IconComp size={18} className="custom-list-icon" />
                 <span className="custom-list-name">{list.name}</span>
               </div>
-              {count > 0 && <span className="nav-badge">{count}</span>}
-            </button>
+              
+              <div className="nav-item-right-wrap">
+                {count > 0 && <span className="nav-badge">{count}</span>}
+
+                <div className="custom-list-actions">
+                  <button 
+                    type="button"
+                    className="icon-btn-subtle-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDialog({ isOpen: true, type: 'renameCustomList', payload: { id: list.id, name: list.name } });
+                    }}
+                    title="Listeyi Yeniden Adlandır"
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                  <button 
+                    type="button"
+                    className="icon-btn-subtle-sm text-danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDialog({ isOpen: true, type: 'deleteCustomList', payload: { id: list.id, name: list.name } });
+                    }}
+                    title="Listeyi Sil"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
           );
         })}
 
@@ -277,6 +328,7 @@ const Sidebar = ({
       </div>
 
       <div className="sidebar-divider" />
+
 
       {/* HISTORICAL WEEKS ACCORDION */}
       <div className="sidebar-section weeks-history-section">
