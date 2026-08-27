@@ -3,26 +3,31 @@
 const DEFAULT_FIREBASE_URL = 'https://weekly-planner-sync-default-rtdb.firebaseio.com';
 
 export const getSyncRoom = () => {
-  // Check URL parameters first: ?room=XYZ
-  const urlParams = new URLSearchParams(window.location.search);
-  const roomFromUrl = urlParams.get('room');
-  if (roomFromUrl) {
-    const cleanRoom = roomFromUrl.trim().toUpperCase();
-    localStorage.setItem('sync_room_id', cleanRoom);
-    return cleanRoom;
-  }
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
+    if (roomFromUrl) {
+      const cleanRoom = roomFromUrl.trim().toUpperCase();
+      try { localStorage.setItem('sync_room_id', cleanRoom); } catch (e) {}
+      return cleanRoom;
+    }
 
-  let savedRoom = localStorage.getItem('sync_room_id');
-  if (!savedRoom) {
-    savedRoom = 'MUZAFFER-PLAN-2026';
-    localStorage.setItem('sync_room_id', savedRoom);
+    let savedRoom = null;
+    try { savedRoom = localStorage.setItem('sync_room_id', savedRoom); } catch (e) {}
+    try { savedRoom = localStorage.getItem('sync_room_id'); } catch (e) {}
+    if (!savedRoom) {
+      savedRoom = 'MUZAFFER-PLAN-2026';
+      try { localStorage.setItem('sync_room_id', savedRoom); } catch (e) {}
+    }
+    return savedRoom;
+  } catch (err) {
+    return 'MUZAFFER-PLAN-2026';
   }
-  return savedRoom;
 };
 
 export const setSyncRoom = (roomId) => {
   const cleanRoom = roomId.trim().toUpperCase();
-  localStorage.setItem('sync_room_id', cleanRoom);
+  try { localStorage.setItem('sync_room_id', cleanRoom); } catch (e) {}
   return cleanRoom;
 };
 
