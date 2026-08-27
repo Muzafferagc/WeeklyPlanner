@@ -6,7 +6,7 @@ import QuickTimePickerModal from './QuickTimePickerModal';
 import DialogModal from './DialogModal';
 import confetti from 'canvas-confetti';
 
-const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onScheduleChange, refreshTrigger }) => {
+const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onDeleteWeek, onScheduleChange, refreshTrigger }) => {
   const [schedule, setSchedule] = useState(null);
   const [editingSlot, setEditingSlot] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
@@ -549,9 +549,38 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onS
                         <div className="week-item-date">{w.startDate && w.endDate ? `${w.startDate} - ${w.endDate}` : `Hafta #${index + 1}`}</div>
                       </div>
                     </div>
-                    <button type="button" className="select-week-btn">
-                      {isActive ? 'Açık' : 'Plana Git →'}
-                    </button>
+                    <div className="week-item-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <button type="button" className="select-week-btn">
+                        {isActive ? 'Açık' : 'Plana Git →'}
+                      </button>
+
+                      {weeks.length > 1 && onDeleteWeek && (
+                        <button 
+                          type="button" 
+                          className="delete-week-icon-btn"
+                          title="Bu Haftayı Sil"
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#ef4444',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`"${w.name}" haftasını silmek istediğinize emin misiniz?`)) {
+                              onDeleteWeek(w.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

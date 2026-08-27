@@ -447,6 +447,18 @@ function App() {
                       <Settings size={18} />
                       <span className="btn-text-responsive">Varsayılan Plan</span>
                     </button>
+
+                    {weeks.length > 1 && (
+                      <button 
+                        className="print-btn"
+                        onClick={() => handleDeleteWeek(currentWeekId)}
+                        title="Mevcut Haftayı Sil"
+                        style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                      >
+                        <Trash2 size={18} />
+                        <span className="btn-text-responsive">Haftayı Sil</span>
+                      </button>
+                    )}
                   </>
                 )}
 
@@ -519,6 +531,7 @@ function App() {
               weeks={weeks}
               onSelectWeek={(id) => setCurrentWeekId(id)}
               onCreateNewWeek={() => setCreateWeekModalOpen(true)}
+              onDeleteWeek={handleDeleteWeek}
               refreshTrigger={syncRefreshKey}
               onScheduleChange={() => { updateProgress(currentWeekId); broadcastCurrentState(); }} 
             />
