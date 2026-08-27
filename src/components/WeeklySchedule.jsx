@@ -20,10 +20,13 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
   const [isSelectMode, setIsSelectMode] = useState(false);
 
+  const isLongPressFiredRef = React.useRef(false);
   const slotTouchTimerRef = React.useRef(null);
 
   const startSlotLongPress = (day, slot) => {
+    isLongPressFiredRef.current = false;
     slotTouchTimerRef.current = setTimeout(() => {
+      isLongPressFiredRef.current = true;
       if (navigator.vibrate) navigator.vibrate(40);
       setIsSelectMode(true);
       setSelectedSlots(prev => {
@@ -36,7 +39,7 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
           return [...prev, { day, id: slot.id }];
         }
       });
-    }, 450);
+    }, 400);
   };
 
   const cancelSlotLongPress = () => {
@@ -185,6 +188,10 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
   };
 
   const handleSlotClick = (e, day, slot) => {
+    if (isLongPressFiredRef.current) {
+      isLongPressFiredRef.current = false;
+      return;
+    }
     if (isSelectMode || selectedSlots.length > 0 || (e && (e.ctrlKey || e.metaKey || e.shiftKey))) {
       if (!isSelectMode) setIsSelectMode(true);
       const exists = selectedSlots.find(s => s.id === slot.id);
@@ -250,7 +257,8 @@ const WeeklySchedule = ({ weekId, onScheduleChange, refreshTrigger }) => {
 
   if (!schedule) return <div className="loading-screen">Hafta Yükleniyor...</div>;
 
-  const days = Object.keys(schedule);
+  const WEEK_DAYS_ORDER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+  const days = schedule ? WEEK_DAYS_ORDER.filter(d => schedule[d] !== undefined) : [];
 
   return (
     <div className="schedule-container-wrapper">
