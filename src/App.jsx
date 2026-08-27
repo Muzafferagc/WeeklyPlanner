@@ -15,7 +15,7 @@ import MobileNav from './components/MobileNav';
 import PwaBanner from './components/PwaBanner';
 import CreateWeekModal from './components/CreateWeekModal';
 import { Calendar } from 'lucide-react';
-import { playAlarmChime, triggerSystemNotification } from './utils/audioAlarm';
+import { startAlarmChimeLoop, stopAlarmChime, triggerSystemNotification } from './utils/audioAlarm';
 import { 
   getWeeks, 
   createNewWeek, 
@@ -141,7 +141,7 @@ function App() {
                     const alarmKey = `${currentWeekId}_${slot.id}_${alarmHHMM}`;
                     if (!triggeredAlarmsRef.current.has(alarmKey)) {
                       triggeredAlarmsRef.current.add(alarmKey);
-                      playAlarmChime();
+                      startAlarmChimeLoop();
                       triggerSystemNotification("⏰ HATIRLATICI ALARMI!", `${slot.activity || 'Etkinlik'} - Saat: ${slot.time}`);
                       setActiveAlarmBanner({ slot, day });
                     }
@@ -689,9 +689,12 @@ function App() {
           <button 
             type="button" 
             className="alarm-dismiss-btn"
-            onClick={() => setActiveAlarmBanner(null)}
+            onClick={() => {
+              stopAlarmChime();
+              setActiveAlarmBanner(null);
+            }}
           >
-            Tamam / Kapat
+            🔕 Alarmı Durdur / Kapat
           </button>
         </div>
       )}

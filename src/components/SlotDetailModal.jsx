@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, FileText, CheckSquare, Link as LinkIcon, Image as ImageIcon, Plus, Trash2, Clock, Bell } from 'lucide-react';
+import { requestNotificationPermissionOnce } from '../utils/audioAlarm';
 
 const SlotDetailModal = ({ slot, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState('notes');
@@ -137,9 +138,10 @@ const SlotDetailModal = ({ slot, onClose, onSave }) => {
                 <select 
                   value={alarm} 
                   onChange={(e) => {
-                    setAlarm(e.target.value);
-                    if (e.target.value !== 'none' && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
-                      Notification.requestPermission();
+                    const val = e.target.value;
+                    setAlarm(val);
+                    if (val !== 'none') {
+                      requestNotificationPermissionOnce();
                     }
                   }}
                   className="alarm-select-dropdown"

@@ -35,26 +35,35 @@ const parseInitialEndTime = (timeStr) => {
 };
 
 const parseInitialMode = (timeStr) => {
-  if (!timeStr) return 'block';
+  if (!timeStr) return 'single';
   if (timeStr.includes('/')) return 'flexible_or';
+  if (timeStr.includes('-')) return 'block';
   if (timeStr === 'Gün Boyu') return 'allday';
   if (timeStr === 'Serbest') return 'flexible';
   if (timeStr === 'Rutin' || timeStr === 'Her Gün') return 'routine';
-  return 'block';
+  return 'single';
 };
 
 export const validateTimeText = (text) => {
-  const trimmed = text.trim();
+  if (!text) return '07:00';
+  let trimmed = text.trim().replace(/\./g, ':');
   if (!trimmed) return '07:00';
   if (['Gün Boyu', 'Serbest', 'Rutin', 'Her Gün'].includes(trimmed)) return trimmed;
 
-  // Check valid time format: HH:MM, HH:MM - HH:MM, HH:MM / HH:MM
+  // Single HH:MM format (e.g. 18:03)
+  const singleRegex = /^([01]?\d|2[0-3]):[0-5]\d$/;
+  if (singleRegex.test(trimmed)) {
+    const [h, m] = trimmed.split(':');
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  // Check valid time format: HH:MM - HH:MM, HH:MM / HH:MM
   const timeBlockRegex = /^([01]?\d|2[0-3]):[0-5]\d(\s*[-/]\s*([01]?\d|2[0-3]):[0-5]\d)?$/;
   if (timeBlockRegex.test(trimmed)) {
     return trimmed;
   }
 
-  // If 4 digits like 1230, format to 12:30
+  // If 4 digits like 1803, format to 18:03
   if (/^\d{4}$/.test(trimmed)) {
     const h = trimmed.slice(0,2);
     const m = trimmed.slice(2,4);
@@ -98,7 +107,10 @@ export default function QuickTimePickerModal({ slot, day, onClose, onSaveTime })
   const handleApplyPreset = (mode, start, dur, customEnd, chosenSep = separator) => {
     setTimeMode(mode);
     setErrorMsg('');
-    if (mode === 'block' || mode === 'flexible_or') {
+    if (mode === 'single') {
+      const activeStart = start || startTime || '07:00';
+      setCustomTimeText(activeStart);
+    } else if (mode === 'block' || mode === 'flexible_or') {
       const activeSep = mode === 'flexible_or' ? '/' : chosenSep;
       const activeStart = start || startTime || '07:00';
       if (customEnd) {
@@ -122,7 +134,7 @@ export default function QuickTimePickerModal({ slot, day, onClose, onSaveTime })
   const handleSave = () => {
     const validated = validateTimeText(customTimeText);
     if (!validated) {
-      setErrorMsg("Geçersiz saat formatı! Örn: '07:00', '07:00 / 07:10', '08:30 - 09:15'");
+      setErrorMsg("Geçersiz saat formatı! Örn: '18:03', '07:00', '08:30 - 09:15'");
       return;
     }
     onSaveTime(day, slot.id, validated);
@@ -146,6 +158,13 @@ export default function QuickTimePickerModal({ slot, day, onClose, onSaveTime })
         <div className="quick-time-body">
           {/* MODE SELECTOR */}
           <div className="time-mode-mini">
+            <button
+              type="button"
+              className={`mini-mode-btn ${timeMode === 'single' ? 'active' : ''}`}
+              onClick={() => handleApplyPreset('single', startTime)}
+            >
+              Tek Saat (Örn: 18:03)
+            </button>
             <button
               type="button"
               className={`mini-mode-btn ${timeMode === 'block' ? 'active' : ''}`}
@@ -182,6 +201,26 @@ export default function QuickTimePickerModal({ slot, day, onClose, onSaveTime })
               Rutin
             </button>
           </div>
+
+          {timeMode === 'single' && (
+            <div className="quick-time-controls">
+              <div className="time-picker-row" style={{ justifyContent: 'center' }}>
+                <div className="field-group" style={{ maxWidth: '240px' }}>
+                  <label>Saat Seçin (Örn: 18:03):</label>
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={e => {
+                      setStartTime(e.target.value);
+                      handleApplyPreset('single', e.target.value);
+                    }}
+                    className="mini-time-input"
+                    style={{ fontSize: '1.4rem', textAlign: 'center' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {(timeMode === 'block' || timeMode === 'flexible_or') && (
             <div className="quick-time-controls">
