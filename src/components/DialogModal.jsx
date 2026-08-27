@@ -8,8 +8,10 @@ const DialogModal = ({
   type = 'confirm', // 'confirm' or 'prompt'
   defaultValue = '',
   confirmText = 'Onayla', 
+  secondaryConfirmText = null,
   cancelText = 'İptal', 
   onConfirm, 
+  onSecondaryConfirm = null,
   onCancel 
 }) => {
   const [inputValue, setInputValue] = useState(defaultValue);
@@ -47,8 +49,18 @@ const DialogModal = ({
               style={{ marginTop: '1rem', width: '100%' }}
             />
           )}
-          <div className="dialog-footer">
+          <div className="dialog-footer" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button type="button" className="btn-secondary" onClick={onCancel}>{cancelText}</button>
+            {secondaryConfirmText && (
+              <button 
+                type="button" 
+                className="btn-secondary"
+                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700 }}
+                onClick={() => { if (onSecondaryConfirm) onSecondaryConfirm(); }}
+              >
+                {secondaryConfirmText}
+              </button>
+            )}
             <button 
               type="button" 
               className={`btn-primary ${title && (title.includes('Sil') || title.includes('Sıfırla')) ? 'danger-bg' : ''}`}

@@ -228,11 +228,16 @@ function App() {
     setConfirmDialog({ isOpen: true, type: 'reset' });
   };
 
-  const handleConfirmReset = async () => {
+  const handleConfirmReset = async (useFactory = false) => {
     if (currentWeekId) {
       setConfirmDialog({ isOpen: false, type: null });
-      const defaultTemplate = await getDefaultScheduleTemplate();
-      const freshSchedule = JSON.parse(JSON.stringify(defaultTemplate));
+      let baseTemplate;
+      if (useFactory) {
+        baseTemplate = await resetDefaultScheduleTemplateToFactory();
+      } else {
+        baseTemplate = await getDefaultScheduleTemplate();
+      }
+      const freshSchedule = JSON.parse(JSON.stringify(baseTemplate));
       for (let day in freshSchedule) {
         if (Array.isArray(freshSchedule[day])) {
           freshSchedule[day] = freshSchedule[day].map(s => ({ ...s, id: generateId() }));
@@ -254,7 +259,6 @@ function App() {
 
   const handleApplyTemplateToWeek = async (template) => {
     if (currentWeekId && template) {
-      await saveDefaultScheduleTemplate(template);
       const freshSchedule = JSON.parse(JSON.stringify(template));
       for (let day in freshSchedule) {
         if (Array.isArray(freshSchedule[day])) {
@@ -609,11 +613,13 @@ function App() {
 
       <DialogModal 
         isOpen={confirmDialog.isOpen}
-        title="Mevcut Haftayı Varsayılana Sıfırla"
-        message="Mevcut haftanızın planı silinecek ve kayıtlı Varsayılan Plan Şablonunuz yüklenecektir. Onaylıyor musunuz?"
-        confirmText="Evet, Sıfırla"
-        onConfirm={handleConfirmReset}
-        onCancel={() => setConfirmDialog({ isOpen: false })}
+        title="Mevcut Haftayı Sıfırla"
+        message="Mevcut haftanız sıfırlanacaktır. Kayıtlı Varsayılan Plan Şablonunuza dönebilir veya Fabrika Ayarlarına (orijinal programa) sıfırlayabilirsiniz."
+        confirmText="Varsayılana Sıfırla"
+        secondaryConfirmText="Fabrika Ayarlarına Dön"
+        onConfirm={() => handleConfirmReset(false)}
+        onSecondaryConfirm={() => handleConfirmReset(true)}
+        onCancel={() => setConfirmDialog({ isOpen: false, type: null })}
       />
 
       <SyncModal
