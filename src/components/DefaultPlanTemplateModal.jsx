@@ -53,13 +53,15 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
 
   const handleMultiDelete = () => {
     if (window.confirm(`${selectedSlots.length} varsayılan plan ögesini silmek istediğinize emin misiniz?`)) {
-      let newTemplate = { ...template };
-      selectedSlots.forEach(({ day, id }) => {
-        if (newTemplate[day]) {
-          newTemplate[day] = newTemplate[day].filter(s => s.id !== id);
-        }
+      setTemplate(prev => {
+        let newTemplate = { ...prev };
+        selectedSlots.forEach(({ day, id }) => {
+          if (newTemplate[day]) {
+            newTemplate[day] = newTemplate[day].filter(s => s.id !== id);
+          }
+        });
+        return newTemplate;
       });
-      setTemplate(newTemplate);
       setSelectedSlots([]);
     }
   };
@@ -67,26 +69,26 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
   const handleEditActivity = (day, slotId, newActivity) => {
     const trimmed = newActivity ? newActivity.trim() : '';
     if (!trimmed) return;
-    setTemplate({
-      ...template,
-      [day]: template[day].map(s => s.id === slotId ? { ...s, activity: trimmed } : s)
-    });
+    setTemplate(prev => ({
+      ...prev,
+      [day]: prev[day].map(s => s.id === slotId ? { ...s, activity: trimmed } : s)
+    }));
   };
 
   const handleQuickSaveTime = (day, slotId, newTime) => {
     const trimmed = newTime ? newTime.trim() : '';
     if (!trimmed) return;
-    setTemplate({
-      ...template,
-      [day]: template[day].map(s => s.id === slotId ? { ...s, time: trimmed } : s)
-    });
+    setTemplate(prev => ({
+      ...prev,
+      [day]: prev[day].map(s => s.id === slotId ? { ...s, time: trimmed } : s)
+    }));
   };
 
   const handleDeleteSlot = (day, slotId) => {
-    setTemplate({
-      ...template,
-      [day]: template[day].filter(s => s.id !== slotId)
-    });
+    setTemplate(prev => ({
+      ...prev,
+      [day]: prev[day].filter(s => s.id !== slotId)
+    }));
   };
 
   const handleAddSlot = (day) => {
@@ -100,29 +102,31 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
       links: [],
       images: []
     };
-    setTemplate({
-      ...template,
-      [day]: [...template[day], newSlot]
-    });
+    setTemplate(prev => ({
+      ...prev,
+      [day]: [...prev[day], newSlot]
+    }));
   };
 
   const handleColorChange = (day, slotId, color) => {
     if (selectedSlots.some(s => s.id === slotId) && selectedSlots.length > 1) {
       // Toplu renk değiştirme
-      const newTemplate = { ...template };
-      for (const dayKey in newTemplate) {
-        newTemplate[dayKey] = newTemplate[dayKey].map(s => 
-          selectedSlots.some(selected => selected.id === s.id) ? { ...s, color } : s
-        );
-      }
-      setTemplate(newTemplate);
+      setTemplate(prev => {
+        const newTemplate = { ...prev };
+        for (const dayKey in newTemplate) {
+          newTemplate[dayKey] = newTemplate[dayKey].map(s => 
+            selectedSlots.some(selected => selected.id === s.id) ? { ...s, color } : s
+          );
+        }
+        return newTemplate;
+      });
       setSelectedSlots([]); // Renk değiştikten sonra seçimi kaldır
     } else {
       // Tekli renk değiştirme
-      setTemplate({
-        ...template,
-        [day]: template[day].map(s => s.id === slotId ? { ...s, color } : s)
-      });
+      setTemplate(prev => ({
+        ...prev,
+        [day]: prev[day].map(s => s.id === slotId ? { ...s, color } : s)
+      }));
     }
   };
 
