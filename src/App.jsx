@@ -5,7 +5,7 @@ import CourseDetailsView from './components/CourseDetailsView';
 import Sidebar from './components/Sidebar';
 import TaskListView from './components/TaskListView';
 import SlotDetailModal from './components/SlotDetailModal';
-import DefaultPlanTemplateModal from './components/DefaultPlanTemplateModal';
+
 import DetailedReport from './components/DetailedReport';
 import DialogModal from './components/DialogModal';
 import CopyWeekModal from './components/CopyWeekModal';
@@ -51,7 +51,7 @@ function App() {
   const [customTasks, setCustomTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [defaultPlanModalOpen, setDefaultPlanModalOpen] = useState(false);
+
   const [copyWeekModalOpen, setCopyWeekModalOpen] = useState(false);
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
   const [createWeekModalOpen, setCreateWeekModalOpen] = useState(false);
@@ -542,15 +542,6 @@ function App() {
                       <span className="btn-text-responsive">Haftayı Kopyala</span>
                     </button>
 
-                    <button 
-                      className="print-btn default-plan-btn"
-                      onClick={() => setDefaultPlanModalOpen(true)}
-                      title="Varsayılan Plan Şablonunu Düzenle"
-                    >
-                      <Settings size={18} />
-                      <span className="btn-text-responsive">Varsayılan Plan</span>
-                    </button>
-
                     {weeks.length > 1 && (
                       <button 
                         className="print-btn"
@@ -695,11 +686,6 @@ function App() {
         }}
       />
 
-      <DefaultPlanTemplateModal
-        isOpen={defaultPlanModalOpen}
-        onClose={() => setDefaultPlanModalOpen(false)}
-        onApplyToCurrentWeek={handleApplyTemplateToWeek}
-      />
 
       <ChangeWeekDateModal
         isOpen={changeDateModalOpen}
