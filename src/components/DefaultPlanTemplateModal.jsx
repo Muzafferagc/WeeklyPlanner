@@ -277,19 +277,27 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
                       </div>
 
                       {/* YELLOW REGION: Activity title inline text edit */}
-                      <div
-                        className="activity-input yellow-region-activity"
+                      <div 
+                        className={`activity-input yellow-region-activity ${!slot.activity ? 'empty' : ''}`}
                         contentEditable
                         suppressContentEditableWarning
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            e.stopPropagation();
                             handleSlotClick(e, day, slot);
                           } else {
                             e.stopPropagation();
                           }
                         }}
                         onBlur={(e) => handleEditActivity(day, slot.id, e.target.textContent)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.blur();
+                          }
+                        }}
                         title="İsmi değiştirmek için tıklayıp yazın (Ctrl ile çoklu seçin)"
                       >
                         {slot.activity}

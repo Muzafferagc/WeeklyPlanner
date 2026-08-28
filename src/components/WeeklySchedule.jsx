@@ -177,37 +177,52 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
   };
 
   const handleConfirmMultiDelete = async () => {
-    let newSchedule = { ...schedule };
-    selectedSlots.forEach(({day, id}) => {
-      newSchedule[day] = newSchedule[day].filter(item => item.id !== id);
+    setSchedule(prevSchedule => {
+      let newSchedule = { ...prevSchedule };
+      selectedSlots.forEach(({day, id}) => {
+        newSchedule[day] = newSchedule[day].filter(item => item.id !== id);
+      });
+      saveScheduleForWeek(weekId, newSchedule).then(() => {
+        if (onScheduleChange) onScheduleChange(newSchedule);
+      });
+      return newSchedule;
     });
-    await handleSaveSchedule(newSchedule);
     setSelectedSlots([]);
     setConfirmDialog({ isOpen: false });
   };
 
   const handleAdd = async (day) => {
     const newItem = { id: generateId(), time: "09:00", activity: "Yeni Etkinlik", notes: "", checklist: [], links: [], images: [], completed: false };
-    const newSchedule = {
-      ...schedule,
-      [day]: [...schedule[day], newItem]
-    };
-    await handleSaveSchedule(newSchedule);
+    setSchedule(prevSchedule => {
+      const newSchedule = {
+        ...prevSchedule,
+        [day]: [...prevSchedule[day], newItem]
+      };
+      saveScheduleForWeek(weekId, newSchedule).then(() => {
+        if (onScheduleChange) onScheduleChange(newSchedule);
+      });
+      return newSchedule;
+    });
   };
 
   const toggleSlotCompletion = async (day, id) => {
     let justCompleted = false;
-    const newSchedule = {
-      ...schedule,
-      [day]: schedule[day].map(item => {
-        if (item.id === id) {
-          if (!item.completed) justCompleted = true;
-          return { ...item, completed: !item.completed };
-        }
-        return item;
-      })
-    };
-    await handleSaveSchedule(newSchedule);
+    setSchedule(prevSchedule => {
+      const newSchedule = {
+        ...prevSchedule,
+        [day]: prevSchedule[day].map(item => {
+          if (item.id === id) {
+            if (!item.completed) justCompleted = true;
+            return { ...item, completed: !item.completed };
+          }
+          return item;
+        })
+      };
+      saveScheduleForWeek(weekId, newSchedule).then(() => {
+        if (onScheduleChange) onScheduleChange(newSchedule);
+      });
+      return newSchedule;
+    });
     
     if (justCompleted) {
       confetti({
@@ -220,11 +235,16 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
   };
 
   const handleMultiComplete = async (isComplete = true) => {
-    let newSchedule = { ...schedule };
-    selectedSlots.forEach(({day, id}) => {
-      newSchedule[day] = newSchedule[day].map(item => item.id === id ? { ...item, completed: isComplete } : item);
+    setSchedule(prevSchedule => {
+      let newSchedule = { ...prevSchedule };
+      selectedSlots.forEach(({day, id}) => {
+        newSchedule[day] = newSchedule[day].map(item => item.id === id ? { ...item, completed: isComplete } : item);
+      });
+      saveScheduleForWeek(weekId, newSchedule).then(() => {
+        if (onScheduleChange) onScheduleChange(newSchedule);
+      });
+      return newSchedule;
     });
-    await handleSaveSchedule(newSchedule);
     setSelectedSlots([]);
     setIsSelectMode(false);
     
@@ -239,11 +259,19 @@ const WeeklySchedule = ({ weekId, weeks = [], onSelectWeek, onCreateNewWeek, onD
   };
 
   const handleMultiColorChange = async (color) => {
-    let newSchedule = { ...schedule };
-    selectedSlots.forEach(({day, id}) => {
-      newSchedule[day] = newSchedule[day].map(item => item.id === id ? { ...item, color } : item);
+    setSchedule(prevSchedule => {
+      let newSchedule = { ...prevSchedule };
+      selectedSlots.forEach(({day, id}) => {
+        newSchedule[day] = newSchedule[day].map(item => item.id === id ? { ...item, color } : item);
+      });
+      
+      // Async kaydetme işlemini arka planda yap
+      saveScheduleForWeek(weekId, newSchedule).then(() => {
+        if (onScheduleChange) onScheduleChange(newSchedule);
+      });
+      
+      return newSchedule;
     });
-    await handleSaveSchedule(newSchedule);
     setSelectedSlots([]);
     setIsSelectMode(false);
   };
