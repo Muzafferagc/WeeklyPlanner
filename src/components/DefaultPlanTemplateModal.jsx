@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, RotateCcw, Save, Sparkles, Clock, Play, CheckSquare } from 'lucide-react';
 import { getDefaultScheduleTemplate, saveDefaultScheduleTemplate, resetDefaultScheduleTemplateToFactory, generateId } from '../utils/storage';
 import QuickTimePickerModal from './QuickTimePickerModal';
