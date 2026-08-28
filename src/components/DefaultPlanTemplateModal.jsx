@@ -20,6 +20,11 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
     setTemplate(data);
   };
 
+  const templateRef = useRef(template);
+  useEffect(() => {
+    templateRef.current = template;
+  }, [template]);
+
   if (!isOpen || !template) return null;
 
   const daysOrder = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -39,11 +44,6 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
       }
     }
   };
-
-  const templateRef = useRef(template);
-  useEffect(() => {
-    templateRef.current = template;
-  }, [template]);
 
   const handleMultiColorChange = (color) => {
     setTemplate(prev => {
