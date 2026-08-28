@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { getNotebookData, saveNotebookData, generateId } from '../utils/storage';
-import { Plus, Trash2, Edit3, Image as ImageIcon, PenTool, MousePointer2, Eraser, Trash } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon, PenTool, MousePointer2, Eraser, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
+import Draggable from 'react-draggable';
 
 export default function NotebookView({ refreshTrigger, onDataChange }) {
   const [pages, setPages] = useState([]);
@@ -13,12 +14,6 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   const [strokeColor, setStrokeColor] = useState('#2b2b2b');
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [isEraser, setIsEraser] = useState(false);
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      canvasRef.current.eraseMode(isEraser);
-    }
-  }, [isEraser]);
   
   const canvasRef = useRef(null);
 
@@ -36,6 +31,13 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   };
 
   const activePage = pages.find(p => p.id === activePageId);
+  const activePageIndex = pages.findIndex(p => p.id === activePageId);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      canvasRef.current.eraseMode(isEraser);
+    }
+  }, [isEraser]);
 
   // When active page changes, load its drawing paths
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     } else if (canvasRef.current) {
       canvasRef.current.clearCanvas();
     }
-  }, [activePageId]); // Do NOT include activePage directly, otherwise it resets on every keystroke
+  }, [activePageId]);
 
   const handleSavePageContent = async (id, newContent) => {
     const newPages = pages.map(p => p.id === id ? { ...p, content: newContent } : p);
@@ -60,7 +62,6 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     if (onDataChange) onDataChange();
   };
   
-  // Save drawing paths automatically
   const handleCanvasUpdate = async () => {
     if (!canvasRef.current || !activePageId) return;
     try {
@@ -75,7 +76,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   const handleAddPage = async () => {
     const newPage = {
       id: generateId(),
-      title: 'Yeni Sayfa',
+      title: `Sayfa ${pages.length + 1}`,
       content: '',
       drawingData: null,
       images: [],
@@ -111,7 +112,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const base64 = event.target.result;
-      const newImage = { id: generateId(), url: base64 };
+      const newImage = { id: generateId(), url: base64, x: 50, y: 50 }; // Default spawn coordinates
       const newPages = pages.map(p => p.id === activePageId ? { ...p, images: [...(p.images || []), newImage] } : p);
       setPages(newPages);
       await saveNotebookData(newPages);
@@ -120,6 +121,21 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     reader.readAsDataURL(file);
   };
   
+  const handleUpdateImagePosition = async (imgId, data) => {
+    if (!activePage) return;
+    const newPages = pages.map(p => {
+      if (p.id === activePageId) {
+        const updatedImages = (p.images || []).map(img => 
+          img.id === imgId ? { ...img, x: data.x, y: data.y } : img
+        );
+        return { ...p, images: updatedImages };
+      }
+      return p;
+    });
+    setPages(newPages);
+    await saveNotebookData(newPages);
+  };
+
   const handleDeleteImage = async (imgId) => {
     if (!activePage) return;
     const newPages = pages.map(p => {
@@ -142,154 +158,184 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     }
   };
 
+  const goToNextPage = () => {
+    if (activePageIndex < pages.length - 1) {
+      setActivePageId(pages[activePageIndex + 1].id);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (activePageIndex > 0) {
+      setActivePageId(pages[activePageIndex - 1].id);
+    }
+  };
+
   if (loading) return <div className="loading-screen">Defter Yükleniyor...</div>;
 
   return (
-    <div className="notebook-layout" style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div className="notebook-layout" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-color)', overflow: 'hidden' }}>
       
-      {/* PAGES SIDEBAR */}
-      <div className="notebook-sidebar no-print" style={{ width: '250px', borderRight: '1px solid var(--border-color)', backgroundColor: 'var(--bg-panel)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-main)' }}>Sayfalar</h3>
-          <button className="icon-btn-subtle" onClick={handleAddPage}><Plus size={18}/></button>
-        </div>
-        <div className="pages-list" style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-          {pages.map(page => (
-            <div 
-              key={page.id} 
-              className={`page-item ${activePageId === page.id ? 'active' : ''}`}
-              onClick={() => setActivePageId(page.id)}
-              style={{ 
-                padding: '12px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px',
-                backgroundColor: activePageId === page.id ? 'rgba(217, 74, 56, 0.1)' : 'transparent',
-                border: activePageId === page.id ? '1px solid var(--primary-light)' : '1px solid transparent',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-              }}
-            >
-              <span style={{ fontSize: '14px', fontWeight: activePageId === page.id ? '600' : '400', color: activePageId === page.id ? 'var(--primary)' : 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {page.title || 'İsimsiz Sayfa'}
-              </span>
+      {activePage ? (
+        <>
+          {/* TOPBAR */}
+          <div className="notebook-toolbar no-print" style={{ 
+            padding: '12px 16px', backgroundColor: '#fff', borderBottom: '1px solid var(--border-color)', 
+            display: 'flex', gap: '12px', alignItems: 'center', zIndex: 10, flexWrap: 'wrap'
+          }}>
+            <input 
+              type="text" 
+              value={activePage.title}
+              onChange={e => handleSavePageTitle(activePage.id, e.target.value)}
+              style={{ fontSize: '18px', fontWeight: 'bold', border: 'none', outline: 'none', background: 'transparent', minWidth: '150px', flex: '1 1 auto' }}
+              placeholder="Sayfa Başlığı"
+            />
+            
+            <div className="toolbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <button 
-                className="delete-page-btn"
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-light)', cursor: 'pointer', opacity: activePageId === page.id ? 1 : 0 }}
-                onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
+                className="delete-btn-hover"
+                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '6px' }}
+                onClick={() => handleDeletePage(activePage.id)}
+                title="Sayfayı Sil"
               >
-                <Trash2 size={14}/>
+                <Trash2 size={18}/>
               </button>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* MAIN NOTEBOOK PAGE */}
-      <div className="notebook-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-color)', position: 'relative' }}>
-        
-        {activePage ? (
-          <>
-            {/* TOOLBAR */}
-            <div className="notebook-toolbar no-print" style={{ padding: '12px 24px', backgroundColor: '#fff', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '16px', alignItems: 'center', zIndex: 10 }}>
-              <input 
-                type="text" 
-                value={activePage.title}
-                onChange={e => handleSavePageTitle(activePage.id, e.target.value)}
-                style={{ fontSize: '20px', fontWeight: 'bold', border: 'none', outline: 'none', background: 'transparent', width: '300px' }}
-                placeholder="Sayfa Başlığı"
-              />
+              <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)' }}></div>
               
-              <div style={{ flex: 1 }}></div>
-              
-              {/* IMAGE UPLOAD */}
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', fontSize: '14px', fontWeight: '500' }}>
-                <ImageIcon size={16}/> Fotoğraf Ekle
+                <ImageIcon size={16}/> <span className="hide-on-mobile">Fotoğraf Ekle</span>
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
               </label>
 
               <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)' }}></div>
 
-              {/* DRAWING TOOLS */}
               <button 
                 onClick={() => setDrawMode(!drawMode)}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', backgroundColor: drawMode ? 'var(--primary)' : 'var(--bg-panel)', color: drawMode ? '#fff' : 'var(--text-main)', border: drawMode ? '1px solid var(--primary)' : '1px solid var(--border-color)', fontSize: '14px', fontWeight: '600' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', backgroundColor: drawMode ? 'var(--primary)' : 'var(--bg-panel)', color: drawMode ? '#fff' : 'var(--text-main)', border: drawMode ? '1px solid var(--primary)' : '1px solid var(--border-color)', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s' }}
               >
                 {drawMode ? <PenTool size={16}/> : <MousePointer2 size={16}/>}
-                {drawMode ? 'Çizim Modu Açık' : 'Yazı Modu Açık'}
+                <span className="hide-on-mobile">{drawMode ? 'Çizim Modu' : 'Yazı Modu'}</span>
               </button>
               
               {drawMode && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', borderRadius: '6px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
                   <input type="color" value={strokeColor} onChange={e => { setStrokeColor(e.target.value); setIsEraser(false); }} style={{ width: '24px', height: '24px', padding: 0, border: 'none', cursor: 'pointer' }} />
-                  <input type="range" min="1" max="20" value={strokeWidth} onChange={e => setStrokeWidth(parseInt(e.target.value))} style={{ width: '80px' }} />
+                  <input type="range" min="1" max="20" value={strokeWidth} onChange={e => setStrokeWidth(parseInt(e.target.value))} style={{ width: '60px' }} />
                   <button onClick={() => setIsEraser(!isEraser)} style={{ background: isEraser ? '#e5e7eb' : 'transparent', border: 'none', padding: '4px', borderRadius: '4px', cursor: 'pointer' }} title="Silgi"><Eraser size={18}/></button>
                   <button onClick={clearCanvas} style={{ background: 'transparent', border: 'none', color: '#ef4444', padding: '4px', cursor: 'pointer' }} title="Tüm Çizimi Temizle"><Trash size={18}/></button>
                 </div>
               )}
             </div>
-
-            {/* PAGE CONTENT WRAPPER */}
-            <div className="notebook-paper" style={{ flex: 1, position: 'relative', overflowY: 'auto' }}>
-              
-              {/* LINED BACKGROUND */}
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.1) 31px, rgba(0,0,0,0.1) 32px)', backgroundAttachment: 'local', zIndex: 1, pointerEvents: 'none' }}></div>
-              
-              {/* IMAGE GALLERY */}
-              {activePage.images && activePage.images.length > 0 && (
-                <div className="notebook-images" style={{ position: 'relative', zIndex: 2, padding: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-                  {activePage.images.map(img => (
-                    <div key={img.id} style={{ position: 'relative', border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', transform: 'rotate(-2deg)' }}>
-                      <img src={img.url} alt="Note Attachment" style={{ maxWidth: '300px', maxHeight: '300px', objectFit: 'contain', display: 'block' }} />
-                      <button 
-                        onClick={() => handleDeleteImage(img.id)}
-                        style={{ position: 'absolute', top: '-10px', right: '-10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                      ><Trash2 size={14}/></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* TEXT AREA */}
-              <textarea
-                value={activePage.content || ''}
-                onChange={e => handleSavePageContent(activePage.id, e.target.value)}
-                style={{ 
-                  position: 'relative', zIndex: 2, width: '100%', minHeight: '100%', 
-                  background: 'transparent', border: 'none', resize: 'none', outline: 'none',
-                  padding: '32px', fontSize: '16px', lineHeight: '32px', color: 'var(--text-main)',
-                  fontFamily: 'inherit',
-                  pointerEvents: drawMode ? 'none' : 'auto'
-                }}
-                placeholder="Notlarınızı buraya yazın..."
-              />
-
-              {/* DRAWING CANVAS (OVERLAY) */}
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 3, pointerEvents: drawMode ? 'auto' : 'none' }}>
-                <ReactSketchCanvas
-                  ref={canvasRef}
-                  strokeWidth={isEraser ? strokeWidth * 3 : strokeWidth}
-                  strokeColor={strokeColor}
-                  eraserWidth={strokeWidth * 3}
-                  canvasColor="transparent"
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  onStroke={handleCanvasUpdate}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)' }}>
-            Lütfen sol menüden bir sayfa seçin.
           </div>
-        )}
-      </div>
+
+          {/* PAGE CONTENT WRAPPER */}
+          <div className="notebook-paper" style={{ flex: 1, position: 'relative', overflowY: 'auto', overflowX: 'hidden' }}>
+            
+            {/* BACKGROUND LINES */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.1) 31px, rgba(0,0,0,0.1) 32px)', backgroundAttachment: 'local', zIndex: 1, pointerEvents: 'none' }}></div>
+            
+            {/* DRAGGABLE IMAGES */}
+            {activePage.images && activePage.images.map(img => (
+              <Draggable 
+                key={img.id} 
+                defaultPosition={{ x: img.x || 50, y: img.y || 50 }}
+                onStop={(e, data) => handleUpdateImagePosition(img.id, data)}
+                disabled={drawMode}
+              >
+                <div style={{ position: 'absolute', zIndex: 4, cursor: drawMode ? 'default' : 'move' }}>
+                  <div style={{ position: 'relative', border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: '2px', backgroundColor: 'white' }}>
+                    <img src={img.url} alt="Note Attachment" style={{ maxWidth: '250px', maxHeight: '350px', objectFit: 'contain', display: 'block', userSelect: 'none', pointerEvents: 'none' }} draggable="false" />
+                    {!drawMode && (
+                      <button 
+                        onPointerDown={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }}
+                        style={{ position: 'absolute', top: '-12px', right: '-12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}
+                      >
+                        <Trash2 size={14}/>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Draggable>
+            ))}
+
+            {/* TEXT AREA */}
+            <textarea
+              value={activePage.content || ''}
+              onChange={e => handleSavePageContent(activePage.id, e.target.value)}
+              style={{ 
+                position: 'relative', zIndex: 2, width: '100%', minHeight: '100%', 
+                background: 'transparent', border: 'none', resize: 'none', outline: 'none',
+                padding: '32px 16px 100px 16px', fontSize: '16px', lineHeight: '32px', color: 'var(--text-main)',
+                fontFamily: 'inherit',
+                pointerEvents: drawMode ? 'none' : 'auto'
+              }}
+              placeholder="Notlarınızı buraya yazın..."
+            />
+
+            {/* DRAWING CANVAS (OVERLAY) */}
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 3, pointerEvents: drawMode ? 'auto' : 'none' }}>
+              <ReactSketchCanvas
+                ref={canvasRef}
+                strokeWidth={isEraser ? strokeWidth * 3 : strokeWidth}
+                strokeColor={strokeColor}
+                eraserWidth={strokeWidth * 3}
+                canvasColor="transparent"
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                onStroke={handleCanvasUpdate}
+              />
+            </div>
+          </div>
+
+          {/* FLOATING BOTTOM PAGINATION */}
+          <div className="notebook-pagination no-print" style={{ 
+            position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', 
+            backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid var(--border-color)', 
+            borderRadius: '30px', padding: '8px 16px', display: 'flex', alignItems: 'center', 
+            gap: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', zIndex: 20, backdropFilter: 'blur(8px)'
+          }}>
+            <button 
+              onClick={goToPrevPage}
+              disabled={activePageIndex === 0}
+              style={{ background: 'transparent', border: 'none', cursor: activePageIndex === 0 ? 'not-allowed' : 'pointer', color: activePageIndex === 0 ? '#ccc' : 'var(--text-main)', padding: '4px', display: 'flex', alignItems: 'center' }}
+            >
+              <ChevronLeft size={24} />
+            </button>
+            
+            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-main)', userSelect: 'none', minWidth: '80px', textAlign: 'center' }}>
+              Sayfa {activePageIndex + 1} / {pages.length}
+            </div>
+
+            <button 
+              onClick={goToNextPage}
+              disabled={activePageIndex === pages.length - 1}
+              style={{ background: 'transparent', border: 'none', cursor: activePageIndex === pages.length - 1 ? 'not-allowed' : 'pointer', color: activePageIndex === pages.length - 1 ? '#ccc' : 'var(--text-main)', padding: '4px', display: 'flex', alignItems: 'center' }}
+            >
+              <ChevronRight size={24} />
+            </button>
+            
+            <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-color)' }}></div>
+            
+            <button 
+              onClick={handleAddPage}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
+            >
+              <Plus size={18} /> <span className="hide-on-mobile">Yeni</span>
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)' }}>
+          Lütfen bir sayfa oluşturun.
+        </div>
+      )}
 
       <style>{`
         .notebook-layout { animation: fadeIn 0.3s ease; }
-        .page-item:hover { background-color: var(--bg-color) !important; }
-        .page-item:hover .delete-page-btn { opacity: 1 !important; }
+        .hide-on-mobile { display: inline; }
         @media (max-width: 768px) {
-          .notebook-layout { flexDirection: 'column'; }
-          .notebook-sidebar { width: '100% !important; borderRight: none !important; borderBottom: 1px solid var(--border-color); maxHeight: 150px; }
-          .notebook-toolbar { flexWrap: wrap; }
-          .notebook-toolbar input[type="text"] { width: 100% !important; }
+          .hide-on-mobile { display: none !important; }
+          .notebook-toolbar { justify-content: space-between; }
+          .notebook-pagination { width: 90%; justify-content: space-between; bottom: 16px; }
         }
       `}</style>
     </div>
