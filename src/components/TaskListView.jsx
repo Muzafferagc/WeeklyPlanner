@@ -75,7 +75,7 @@ const TaskListView = ({
     } else if (safeListId === 'smart_planned') {
       result = result.filter(t => Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')));
     } else if (safeListId === 'smart_all') {
-      // all tasks
+      result = result.filter(t => !t.listId || t.listId === 'smart_all');
     } else {
       result = result.filter(t => t.listId === safeListId);
     }
