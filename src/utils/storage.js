@@ -240,28 +240,14 @@ export const renameWeek = async (weekId, newName) => {
 
 export const initialCourseData = [
   {
-    id: 'c_mlops',
-    title: 'MLOps & Yapay Zeka',
+    id: 'f_root_1',
+    type: 'folder',
+    title: 'Örnek Klasör (Data & ML)',
     color: '#8b5cf6',
-    description: 'Model deployment, CI/CD pipelines, Docker, MLflow ve monitoring müfredatı',
-    topics: []
-  },
-  {
-    id: 'c_java_oop',
-    title: 'Java OOP (Nesne Yönelimli Programlama)',
-    color: '#06b6d4',
-    description: 'Nesne yönelimli tasarım ilkeleri, SOLID, Tasarım Desenleri ve Java Collection Framework',
-    topics: []
-  },
-  {
-    id: 'c_2nd_year',
-    title: '2. Sınıf Dersleri (Müfredat Takibi)',
-    color: '#ec4899',
-    description: 'Veri Yapıları, İşletim Sistemleri, Veri Tabanı Yönetimi ve Algoritma Analizi ders notları',
-    topics: []
+    description: 'Burası bir klasördür, içine başka klasörler veya konular ekleyebilirsiniz.',
+    children: []
   }
 ];
-
 
 export const getCourseDetailsData = async () => {
   let data = await localforage.getItem('course_details_data');
@@ -269,11 +255,21 @@ export const getCourseDetailsData = async () => {
     data = JSON.parse(JSON.stringify(initialCourseData));
     await localforage.setItem('course_details_data', data);
   } else {
-    // Sanitize data: ensure topics are clean if user wants clean slate
-    data = data.map(course => ({
-      ...course,
-      topics: Array.isArray(course.topics) ? course.topics : []
-    }));
+    // Migration: Check if first element is old format (no 'type' property)
+    if (data.length > 0 && !data[0].type) {
+      data = data.map(course => ({
+        id: course.id || generateId(),
+        type: 'folder',
+        title: course.title || course.name || 'İsimsiz Klasör',
+        color: course.color || '#3b82f6',
+        description: course.description || '',
+        children: (course.topics || []).map(topic => ({
+          ...topic,
+          type: 'topic'
+        }))
+      }));
+      await localforage.setItem('course_details_data', data);
+    }
   }
   return data;
 };
