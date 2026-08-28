@@ -22,7 +22,12 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
 
   if (!isOpen || !template) return null;
 
-  const days = Object.keys(template);
+  const daysOrder = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+  const days = Object.keys(template).sort((a, b) => {
+    const idxA = daysOrder.indexOf(a);
+    const idxB = daysOrder.indexOf(b);
+    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+  });
 
   const handleSlotClick = (e, day, slot) => {
     if (selectedSlots.length > 0 || e.ctrlKey || e.metaKey || e.shiftKey) {
