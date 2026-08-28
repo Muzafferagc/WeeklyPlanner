@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, CheckCircle2, Clock, Circle, FileText, X, ChevronRight, Folder, FolderOpen, CheckSquare, Square, CalendarIcon
 } from 'lucide-react';
@@ -261,7 +261,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
     <div className="course-details-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'var(--bg-color)', overflow: 'hidden' }}>
       
       {/* BREADCRUMBS */}
-      <div className="explorer-breadcrumbs no-print" style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-panel)', gap: '8px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+      <div className="explorer-breadcrumbs no-print" style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', gap: '8px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
         {getBreadcrumbs().map((crumb, idx, arr) => (
           <React.Fragment key={crumb.id}>
             <span 
@@ -331,7 +331,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
         )}
         
         {folders.map(folder => (
-          <div key={folder.id} className="explorer-card folder-card" onClick={() => navigateToFolder(folder.id)} style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', position: 'relative' }}>
+          <div key={folder.id} className="explorer-card folder-card" onClick={() => navigateToFolder(folder.id)} style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', position: 'relative' }}>
             <div className="folder-icon" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '12px' }}>
               <Folder size={32} fill={folder.color || '#3b82f6'} color={folder.color || '#3b82f6'} />
             </div>
@@ -352,7 +352,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
           const compChecks = topic.checklist ? topic.checklist.filter(c => c.completed).length : 0;
           
           return (
-            <div key={topic.id} className="explorer-card topic-card" onClick={() => setActiveTopic(topic)} style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+            <div key={topic.id} className="explorer-card topic-card" onClick={() => setActiveTopic(topic)} style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
               <div className="topic-status-bar" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: Conf.color }}></div>
               <div className="topic-info" style={{ paddingLeft: '8px' }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '16px', color: 'var(--text-main)', fontWeight: '600', lineHeight: '1.4' }}>{topic.title}</h4>
@@ -383,7 +383,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
       {/* TOPIC DETAIL DRAWER */}
       {activeTopic && (
         <div className="topic-drawer-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setActiveTopic(null)}>
-          <div className="topic-drawer" style={{ width: '450px', maxWidth: '100%', backgroundColor: 'var(--bg-panel)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)', animation: 'slideInRight 0.3s ease' }} onClick={e => e.stopPropagation()}>
+          <div className="topic-drawer" style={{ width: '450px', maxWidth: '100%', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)', animation: 'slideInRight 0.3s ease' }} onClick={e => e.stopPropagation()}>
             <div className="drawer-header" style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '18px' }}>Konu Detayları</h3>
               <button onClick={() => setActiveTopic(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '4px' }}><X size={24}/></button>

@@ -17,7 +17,8 @@
     "lucide-react": "^1.34.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-sketch-canvas": "^8.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
