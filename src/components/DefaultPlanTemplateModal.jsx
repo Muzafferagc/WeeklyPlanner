@@ -40,9 +40,14 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
     }
   };
 
+  const templateRef = useRef(template);
+  useEffect(() => {
+    templateRef.current = template;
+  }, [template]);
+
   const handleMultiColorChange = (color) => {
     setTemplate(prev => {
-      let newTemplate = { ...prev };
+      let newTemplate = JSON.parse(JSON.stringify(prev));
       selectedSlots.forEach(({ day, id }) => {
         if (newTemplate[day]) {
           newTemplate[day] = newTemplate[day].map(s => s.id === id ? { ...s, color } : s);
@@ -138,7 +143,8 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
   };
 
   const handleSaveAll = async () => {
-    await saveDefaultScheduleTemplate(template);
+    const dataToSave = templateRef.current || template;
+    await saveDefaultScheduleTemplate(dataToSave);
     alert('✓ Varsayılan plan şablonunuz başarıyla kaydedildi!');
     onClose();
   };
@@ -153,9 +159,10 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
 
   const handleApplyToWeek = async () => {
     if (window.confirm('Bu varsayılan plan şablonu mevcut aktif haftanıza yüklensin mi?')) {
-      await saveDefaultScheduleTemplate(template);
+      const dataToSave = templateRef.current || template;
+      await saveDefaultScheduleTemplate(dataToSave);
       if (onApplyToCurrentWeek) {
-        await onApplyToCurrentWeek(template);
+        await onApplyToCurrentWeek(dataToSave);
       }
       onClose();
     }
