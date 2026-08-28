@@ -57,7 +57,7 @@ function App() {
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
-  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
 
   useEffect(() => {
     loadApp();
@@ -180,7 +180,15 @@ function App() {
     broadcastCurrentState();
   };
 
-  const handleDeleteWeek = async (id) => {
+  const handleDeleteWeek = (id) => {
+    if (weeks.length <= 1) {
+      alert("Son haftayı silemezsiniz!");
+      return;
+    }
+    setConfirmDialog({ isOpen: true, type: 'delete_week', payload: id });
+  };
+
+  const executeDeleteWeek = async (id) => {
     const success = await deleteWeek(id);
     if (success) {
       const updatedWeeks = await getWeeks();
@@ -189,8 +197,6 @@ function App() {
         setCurrentWeekId(updatedWeeks[0].id);
       }
       broadcastCurrentState();
-    } else {
-      alert("Son haftayı silemezsiniz!");
     }
   };
 
@@ -660,11 +666,22 @@ function App() {
 
       <DialogModal 
         isOpen={confirmDialog.isOpen}
-        title="Haftayı Şablona Sıfırla"
-        message="Mevcut haftanızdaki tüm işlemler silinecek ve kaydettiğiniz 'Varsayılan Şablon' ekranınıza yüklenecektir. Emin misiniz?"
-        confirmText="Evet, Şablona Sıfırla"
-        onConfirm={() => handleConfirmReset('template')}
-        onCancel={() => setConfirmDialog({ isOpen: false, type: null })}
+        title={confirmDialog.type === 'delete_week' ? "Haftayı Sil" : "Haftayı Şablona Sıfırla"}
+        message={
+          confirmDialog.type === 'delete_week' 
+            ? "Bu haftayı ve içindeki tüm kayıtları kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+            : "Mevcut haftanızdaki tüm işlemler silinecek ve kaydettiğiniz 'Varsayılan Şablon' ekranınıza yüklenecektir. Emin misiniz?"
+        }
+        confirmText={confirmDialog.type === 'delete_week' ? "Evet, Sil" : "Evet, Şablona Sıfırla"}
+        onConfirm={() => {
+          if (confirmDialog.type === 'delete_week') {
+            executeDeleteWeek(confirmDialog.payload);
+            setConfirmDialog({ isOpen: false, type: null, payload: null });
+          } else {
+            handleConfirmReset('template');
+          }
+        }}
+        onCancel={() => setConfirmDialog({ isOpen: false, type: null, payload: null })}
       />
 
       <SyncModal
