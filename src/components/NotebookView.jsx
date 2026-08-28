@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getNotebookData, saveNotebookData, generateId } from '../utils/storage';
 import { Plus, Trash2, Image as ImageIcon, PenTool, MousePointer2, Eraser, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
@@ -231,58 +231,65 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
           {/* PAGE CONTENT WRAPPER */}
           <div className="notebook-paper" style={{ flex: 1, position: 'relative', overflowY: 'auto', overflowX: 'hidden' }}>
             
-            {/* BACKGROUND LINES */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.1) 31px, rgba(0,0,0,0.1) 32px)', backgroundAttachment: 'local', zIndex: 1, pointerEvents: 'none' }}></div>
-            
-            {/* DRAGGABLE IMAGES */}
-            {activePage.images && activePage.images.map(img => (
-              <Draggable 
-                key={img.id} 
-                defaultPosition={{ x: img.x || 50, y: img.y || 50 }}
-                onStop={(e, data) => handleUpdateImagePosition(img.id, data)}
-                disabled={drawMode}
-              >
-                <div style={{ position: 'absolute', zIndex: 4, cursor: drawMode ? 'default' : 'move' }}>
-                  <div style={{ position: 'relative', border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: '2px', backgroundColor: 'white' }}>
-                    <img src={img.url} alt="Note Attachment" style={{ maxWidth: '250px', maxHeight: '350px', objectFit: 'contain', display: 'block', userSelect: 'none', pointerEvents: 'none' }} draggable="false" />
-                    {!drawMode && (
-                      <button 
-                        onPointerDown={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }}
-                        style={{ position: 'absolute', top: '-12px', right: '-12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}
-                      >
-                        <Trash2 size={14}/>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </Draggable>
-            ))}
+            {/* GRID WRAPPER FOR PERFECT HEIGHT SYNC */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', minHeight: '100%' }}>
+              
+              {/* BACKGROUND LINES */}
+              <div style={{ gridArea: '1/1', backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.1) 31px, rgba(0,0,0,0.1) 32px)', backgroundAttachment: 'local', zIndex: 1, pointerEvents: 'none' }}></div>
+              
+              {/* DRAGGABLE IMAGES */}
+              <div style={{ gridArea: '1/1', position: 'relative', zIndex: 4, pointerEvents: 'none' }}>
+                {activePage.images && activePage.images.map(img => (
+                  <Draggable 
+                    key={img.id} 
+                    defaultPosition={{ x: img.x || 50, y: img.y || 50 }}
+                    onStop={(e, data) => handleUpdateImagePosition(img.id, data)}
+                    disabled={drawMode}
+                  >
+                    <div style={{ position: 'absolute', pointerEvents: 'auto', cursor: drawMode ? 'default' : 'move' }}>
+                      <div style={{ position: 'relative', border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: '2px', backgroundColor: 'white' }}>
+                        <img src={img.url} alt="Note Attachment" style={{ maxWidth: '250px', maxHeight: '350px', objectFit: 'contain', display: 'block', userSelect: 'none', pointerEvents: 'none' }} draggable="false" />
+                        {!drawMode && (
+                          <button 
+                            onPointerDown={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }}
+                            style={{ position: 'absolute', top: '-12px', right: '-12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}
+                          >
+                            <Trash2 size={14}/>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </Draggable>
+                ))}
+              </div>
 
-            {/* TEXT AREA */}
-            <textarea
-              value={activePage.content || ''}
-              onChange={e => handleSavePageContent(activePage.id, e.target.value)}
-              style={{ 
-                position: 'relative', zIndex: 2, width: '100%', minHeight: '100%', 
-                background: 'transparent', border: 'none', resize: 'none', outline: 'none',
-                padding: '32px 16px 100px 16px', fontSize: '16px', lineHeight: '32px', color: 'var(--text-main)',
-                fontFamily: 'inherit',
-                pointerEvents: drawMode ? 'none' : 'auto'
-              }}
-              placeholder="Notlarınızı buraya yazın..."
-            />
-
-            {/* DRAWING CANVAS (OVERLAY) */}
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 3, pointerEvents: drawMode ? 'auto' : 'none' }}>
-              <ReactSketchCanvas
-                ref={canvasRef}
-                strokeWidth={isEraser ? strokeWidth * 3 : strokeWidth}
-                strokeColor={strokeColor}
-                eraserWidth={strokeWidth * 3}
-                canvasColor="transparent"
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                onStroke={handleCanvasUpdate}
+              {/* TEXT AREA */}
+              <textarea
+                value={activePage.content || ''}
+                onChange={e => handleSavePageContent(activePage.id, e.target.value)}
+                style={{ 
+                  gridArea: '1/1',
+                  position: 'relative', zIndex: 2, width: '100%', minHeight: '100%', 
+                  background: 'transparent', border: 'none', resize: 'vertical', outline: 'none',
+                  padding: '32px 16px 150px 16px', fontSize: '16px', lineHeight: '32px', color: 'var(--text-main)',
+                  fontFamily: 'inherit',
+                  pointerEvents: drawMode ? 'none' : 'auto'
+                }}
+                placeholder="Notlarınızı buraya yazın..."
               />
+
+              {/* DRAWING CANVAS (OVERLAY) */}
+              <div style={{ gridArea: '1/1', position: 'relative', zIndex: 3, pointerEvents: drawMode ? 'auto' : 'none' }}>
+                <ReactSketchCanvas
+                  ref={canvasRef}
+                  strokeWidth={isEraser ? strokeWidth * 3 : strokeWidth}
+                  strokeColor={strokeColor}
+                  eraserWidth={strokeWidth * 3}
+                  canvasColor="transparent"
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  onStroke={handleCanvasUpdate}
+                />
+              </div>
             </div>
           </div>
 

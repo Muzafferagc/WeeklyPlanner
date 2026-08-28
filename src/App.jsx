@@ -482,7 +482,7 @@ function App() {
         isMobileDrawerOpen={isMobileDrawerOpen}
         onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
       />
-      <div className="app-container">
+      <div className={`app-container ${activeTab === 'notebook' ? 'notebook-mode' : ''}`}>
         {/* HEADER ONLY ON SCHEDULE/DETAILS TABS, OR CUSTOM HEADER BAR */}
         {(activeTab === 'schedule' || activeTab === 'details') ? (
           <header className="header no-print">
