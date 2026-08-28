@@ -383,7 +383,7 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
       {/* TOPIC DETAIL DRAWER */}
       {activeTopic && (
         <div className="topic-drawer-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setActiveTopic(null)}>
-          <div className="topic-drawer" style={{ width: '450px', maxWidth: '100%', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)', animation: 'slideInRight 0.3s ease' }} onClick={e => e.stopPropagation()}>
+          <div className="topic-drawer" style={{ width: '450px', maxWidth: '100vw', boxSizing: 'border-box', backgroundColor: 'var(--bg-color)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)', animation: 'slideInRight 0.3s ease' }} onClick={e => e.stopPropagation()}>
             <div className="drawer-header" style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '18px' }}>Konu Detayları</h3>
               <button onClick={() => setActiveTopic(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '4px' }}><X size={24}/></button>

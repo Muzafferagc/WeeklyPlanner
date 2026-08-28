@@ -66,7 +66,7 @@ function App() {
   }, []);
 
   const [syncRefreshKey, setSyncRefreshKey] = useState(0);
-  const lastMutationTimeRef = React.useRef(0);
+  const lastMutationTimeRef = React.useRef(Date.now()); // Initialize to now to prevent wiping on load
 
   useEffect(() => {
     // Setup Realtime Cloud Sync Listener
