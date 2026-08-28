@@ -630,11 +630,11 @@ function App() {
       <DialogModal 
         isOpen={confirmDialog.isOpen}
         title="Mevcut Haftayı Sıfırla"
-        message="Mevcut haftanız sıfırlanacaktır. Orijinal fabrika programına (Uyanış vb.) dönebilir veya kendi hazırladığınız özel şablona sıfırlayabilirsiniz:"
-        confirmText="Orijinal Fabrika Programına Sıfırla"
-        secondaryConfirmText="Kayıtlı Özel Şablonuma Dön"
-        onConfirm={() => handleConfirmReset('factory')}
-        onSecondaryConfirm={() => handleConfirmReset('template')}
+        message="Mevcut haftanız sıfırlanacaktır. Kendi kaydettiğiniz 'Varsayılan Şablonunuza' dönmek veya her şeyi silip orijinal fabrika programına dönmek için seçiminizi yapın:"
+        confirmText="Kayıtlı Şablonuma Dön"
+        secondaryConfirmText="Orijinal Fabrikaya Dön (Temizle)"
+        onConfirm={() => handleConfirmReset('template')}
+        onSecondaryConfirm={() => handleConfirmReset('factory')}
         onCancel={() => setConfirmDialog({ isOpen: false, type: null })}
       />
 
