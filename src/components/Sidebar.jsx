@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Plus, CalendarDays, Trash2, Edit3, Download, Settings, Search, Filter, BookOpen,
   Sun, Star, Calendar, CheckSquare, ListTodo, ShoppingCart, Brain, Folder, Compass,
-  Target, BookMarked, PiggyBank, List, ChevronDown, ChevronRight, User, Share2, RotateCcw
+  Target, BookMarked, PiggyBank, List, ChevronDown, ChevronRight, User, Share2, RotateCcw, Save
 } from 'lucide-react';
 import DialogModal from './DialogModal';
 import { createCustomList, deleteCustomList, renameCustomList } from '../utils/storage';
@@ -37,6 +37,7 @@ const Sidebar = ({
   onMultiDeleteWeeks, 
   onMultiExportWeeks, 
   onOpenDefaultPlanModal,
+  onSaveCurrentWeekAsTemplate,
   activeTab = 'list_programlanan',
   onTabChange,
   customLists = [],
@@ -447,6 +448,14 @@ const Sidebar = ({
 
             <button className="new-week-btn" onClick={onCreateWeek}>
               <Plus size={16} /> Yeni Hafta Oluştur
+            </button>
+            <button 
+              className="new-week-btn reset-week-btn-sidebar" 
+              onClick={() => { if (onCloseMobileDrawer) onCloseMobileDrawer(); if (onSaveCurrentWeekAsTemplate) onSaveCurrentWeekAsTemplate(); }}
+              style={{ marginTop: '0.5rem', background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 700 }}
+              title="Mevcut haftanızı Varsayılan Şablon olarak kaydedin"
+            >
+              <Save size={16} /> Mevcut Haftayı Şablon Yap
             </button>
             <button 
               className="new-week-btn reset-week-btn-sidebar" 

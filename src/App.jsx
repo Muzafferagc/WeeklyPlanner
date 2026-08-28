@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode, Trash2, Bell } from 'lucide-react';
+import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode, Trash2, Bell, Save } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
 import CourseDetailsView from './components/CourseDetailsView';
 import Sidebar from './components/Sidebar';
@@ -297,6 +297,30 @@ function App() {
     }
   };
 
+  const handleSaveCurrentWeekAsTemplate = async () => {
+    if (!currentWeekId) return;
+    if (window.confirm('Bu haftaki mevcut planınız "Varsayılan Plan Şablonu" olarak kaydedilsin mi?\n\n(Bundan sonra oluşturacağınız tüm yeni haftalar veya sıfırlamalar bu haftanın düzeniyle başlayacaktır.)')) {
+      try {
+        const currentData = await getScheduleForWeek(currentWeekId);
+        
+        const cleanTemplate = JSON.parse(JSON.stringify(currentData));
+        for (let day in cleanTemplate) {
+          if (Array.isArray(cleanTemplate[day])) {
+            cleanTemplate[day] = cleanTemplate[day].map(s => ({
+              ...s,
+              completed: false
+            }));
+          }
+        }
+        
+        await saveDefaultScheduleTemplate(cleanTemplate);
+        alert('✓ Mevcut hafta başarıyla Varsayılan Plan Şablonu olarak kaydedildi!');
+      } catch (err) {
+        alert('Şablon kaydedilirken bir hata oluştu.');
+      }
+    }
+  };
+
   const handleExport = async (weekIds = null) => {
     const jsonStr = await exportData(weekIds, currentWeekId);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -445,6 +469,7 @@ function App() {
         customTasks={customTasks}
         onRefreshData={refreshCustomData}
         onResetCurrentWeek={requestReset}
+        onSaveCurrentWeekAsTemplate={handleSaveCurrentWeekAsTemplate}
         isMobileDrawerOpen={isMobileDrawerOpen}
         onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
       />
@@ -543,6 +568,10 @@ function App() {
                 </button>
                 {activeTab === 'schedule' && (
                   <>
+                    <button className="print-btn" onClick={handleSaveCurrentWeekAsTemplate} title="Mevcut Haftayı Varsayılan Şablon Yap" style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+                      <Save size={18} />
+                      <span className="btn-text-responsive">Şablon Yap</span>
+                    </button>
                     <button className="print-btn reset-btn" onClick={requestReset} title="Mevcut Haftayı Varsayılan Plana Sıfırla" style={{ color: '#d97706', borderColor: 'rgba(217, 119, 6, 0.4)' }}>
                       <RotateCcw size={18} />
                       <span className="btn-text-responsive">Haftayı Sıfırla</span>
