@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode, Trash2, Bell, Save } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
 import CourseDetailsView from './components/CourseDetailsView';
+import NotebookView from './components/NotebookView';
 import Sidebar from './components/Sidebar';
 import TaskListView from './components/TaskListView';
 import SlotDetailModal from './components/SlotDetailModal';
@@ -644,7 +645,13 @@ function App() {
               onDataChange={broadcastCurrentState}
             />
           )}
-          {activeTab !== 'schedule' && activeTab !== 'details' && (
+          {activeTab === 'notebook' && (
+            <NotebookView 
+              refreshTrigger={syncRefreshKey}
+              onDataChange={broadcastCurrentState}
+            />
+          )}
+          {activeTab !== 'schedule' && activeTab !== 'details' && activeTab !== 'notebook' && (
             <TaskListView 
               key={activeTab}
               currentList={currentListObj}

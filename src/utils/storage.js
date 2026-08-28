@@ -590,3 +590,33 @@ export const resetAllData = async () => {
   const defaultWeeks = await getWeeks();
   return defaultWeeks;
 };
+
+export const getNotebookData = async () => {
+  try {
+    const data = await localforage.getItem('notebook_pages');
+    if (data) return data;
+    
+    // Default initial data
+    const initial = [{
+      id: generateId(),
+      title: 'İlk Sayfam',
+      content: 'Bu sayfada çizim yapabilir, fotoğraf ekleyebilir ve notlar alabilirsiniz.',
+      drawingData: null,
+      images: [],
+      createdAt: new Date().toISOString()
+    }];
+    await saveNotebookData(initial);
+    return initial;
+  } catch (error) {
+    console.error('Error fetching notebook data:', error);
+    return [];
+  }
+};
+
+export const saveNotebookData = async (data) => {
+  try {
+    await localforage.setItem('notebook_pages', data);
+  } catch (error) {
+    console.error('Error saving notebook data:', error);
+  }
+};

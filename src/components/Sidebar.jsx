@@ -280,6 +280,16 @@ const Sidebar = ({
               <span>Ders Detayları & Müfredat</span>
             </div>
           </button>
+
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'notebook' ? 'active' : ''}`}
+            onClick={() => handleTabClick('notebook')}
+          >
+            <div className="nav-item-left">
+              <BookMarked size={18} className="icon-notebook" />
+              <span>Not Defteri</span>
+            </div>
+          </button>
         </div>
 
       <div className="sidebar-divider" />
