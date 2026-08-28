@@ -109,20 +109,25 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
   };
 
   const handleColorChange = (day, slotId, color) => {
-    if (selectedSlots.some(s => s.id === slotId) && selectedSlots.length > 1) {
-      // Toplu renk değiştirme
+    if (selectedSlots.length > 0) {
+      // Ekranda seçili kutucuk(lar) varsa, tıklanan dropdown hangisi olursa olsun
+      // SEÇİLİ OLAN TÜM KUTUCUKLARIN rengini değiştir. (Eğer tıklanan slot seçili değilse onu da ekle).
+      const slotsToColor = selectedSlots.some(s => s.id === slotId) 
+        ? selectedSlots 
+        : [...selectedSlots, { day, id: slotId }];
+
       setTemplate(prev => {
         const newTemplate = { ...prev };
         for (const dayKey in newTemplate) {
           newTemplate[dayKey] = newTemplate[dayKey].map(s => 
-            selectedSlots.some(selected => selected.id === s.id) ? { ...s, color } : s
+            slotsToColor.some(selected => selected.id === s.id) ? { ...s, color } : s
           );
         }
         return newTemplate;
       });
       setSelectedSlots([]); // Renk değiştikten sonra seçimi kaldır
     } else {
-      // Tekli renk değiştirme
+      // Hiçbir seçim yoksa sadece tıklananın rengini değiştir
       setTemplate(prev => ({
         ...prev,
         [day]: prev[day].map(s => s.id === slotId ? { ...s, color } : s)
