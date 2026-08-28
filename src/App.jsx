@@ -30,7 +30,8 @@ import {
   getCustomLists,
   getCustomTasks,
   generateId,
-  resetDefaultScheduleTemplateToFactory
+  resetDefaultScheduleTemplateToFactory,
+  saveDefaultScheduleTemplate
 } from './utils/storage';
 import { getSyncRoom, subscribeToCloudSync, broadcastToCloud } from './utils/syncService';
 import confetti from 'canvas-confetti';
@@ -321,18 +322,7 @@ function App() {
         
         await saveDefaultScheduleTemplate(cleanTemplate);
         
-        // Debugging verification
-        const verifyTemplate = await getDefaultScheduleTemplate();
-        let colorCount = 0;
-        for (let day in verifyTemplate) {
-          if (Array.isArray(verifyTemplate[day])) {
-            verifyTemplate[day].forEach(s => {
-              if (s.color && s.color !== 'gray') colorCount++;
-            });
-          }
-        }
-        
-        alert(`✓ Şablon kaydedildi! Bulunan renkli slot sayısı: ${colorCount}`);
+        alert(`✓ Mevcut hafta başarıyla Varsayılan Plan Şablonu olarak kaydedildi!`);
       } catch (err) {
         alert('Şablon kaydedilirken bir hata oluştu: ' + err.message);
       }
