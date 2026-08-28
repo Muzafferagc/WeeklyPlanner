@@ -228,13 +228,18 @@ function App() {
     setConfirmDialog({ isOpen: true, type: 'reset' });
   };
 
-  const handleConfirmReset = async () => {
+  const handleConfirmReset = async (mode = 'factory') => {
     if (currentWeekId) {
       setConfirmDialog({ isOpen: false, type: null });
-      lastMutationTimeRef.current = Date.now(); // Lock cloud polling overwrite
+      lastMutationTimeRef.current = Date.now() + 15000; // Lock cloud polling overwrite for 15s
 
-      // 1. Clear any corrupted custom template from localforage & localStorage
-      const baseTemplate = await resetDefaultScheduleTemplateToFactory();
+      // 1. Clear any corrupted custom template from localforage & localStorage or load custom template
+      let baseTemplate;
+      if (mode === 'template') {
+        baseTemplate = await getDefaultScheduleTemplate();
+      } else {
+        baseTemplate = await resetDefaultScheduleTemplateToFactory();
+      }
       
       // 2. Generate fresh schedule with new IDs & completed: false
       const freshSchedule = JSON.parse(JSON.stringify(baseTemplate));
@@ -624,11 +629,12 @@ function App() {
 
       <DialogModal 
         isOpen={confirmDialog.isOpen}
-        title="Mevcut Haftayı Varsayılana Sıfırla"
-        message="Mevcut haftanızın planı (düzenlediğiniz 'uyanışaaa' vb. tüm başlıklar) silinecek ve orijinal varsayılan programa ('Uyanış') dönülecektir. Onaylıyor musunuz?"
-        confirmText="Evet, Sıfırla"
-        cancelText="İptal"
-        onConfirm={handleConfirmReset}
+        title="Mevcut Haftayı Sıfırla"
+        message="Mevcut haftanız sıfırlanacaktır. Orijinal fabrika programına (Uyanış vb.) dönebilir veya kendi hazırladığınız özel şablona sıfırlayabilirsiniz:"
+        confirmText="Orijinal Fabrika Programına Sıfırla"
+        secondaryConfirmText="Kayıtlı Özel Şablonuma Dön"
+        onConfirm={() => handleConfirmReset('factory')}
+        onSecondaryConfirm={() => handleConfirmReset('template')}
         onCancel={() => setConfirmDialog({ isOpen: false, type: null })}
       />
 
