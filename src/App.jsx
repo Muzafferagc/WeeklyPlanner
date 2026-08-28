@@ -68,8 +68,8 @@ function App() {
     // Setup Realtime Cloud Sync Listener
     const room = getSyncRoom();
     const handleSync = async (cloudData) => {
-      // If we made a local edit in the last 1.2 seconds, don't let incoming polling overwrite our local state!
-      if (Date.now() - lastMutationTimeRef.current < 1200) {
+      // If we made a local edit in the last 15 seconds, don't let incoming cloud polling overwrite our local state!
+      if (Date.now() - lastMutationTimeRef.current < 15000) {
         return;
       }
       if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
@@ -231,8 +231,12 @@ function App() {
   const handleConfirmReset = async () => {
     if (currentWeekId) {
       setConfirmDialog({ isOpen: false, type: null });
-      // Always reset to initial factory template cleanly (removes customDefaultSchedule if corrupted)
+      lastMutationTimeRef.current = Date.now(); // Lock cloud polling overwrite
+
+      // 1. Clear any corrupted custom template from localforage & localStorage
       const baseTemplate = await resetDefaultScheduleTemplateToFactory();
+      
+      // 2. Generate fresh schedule with new IDs & completed: false
       const freshSchedule = JSON.parse(JSON.stringify(baseTemplate));
       for (let day in freshSchedule) {
         if (Array.isArray(freshSchedule[day])) {
@@ -243,14 +247,21 @@ function App() {
           }));
         }
       }
+
+      // 3. Save locally to localforage
       await saveScheduleForWeek(currentWeekId, freshSchedule);
       await updateProgress(currentWeekId);
+
+      // 4. Force React UI re-mount
       setSyncRefreshKey(Date.now());
+
+      // 5. Broadcast fresh reset data to Cloud Supabase immediately
       await broadcastCurrentState();
+
       try {
         confetti({
-          particleCount: 100,
-          spread: 80,
+          particleCount: 120,
+          spread: 90,
           origin: { y: 0.7 }
         });
       } catch (e) {}
