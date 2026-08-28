@@ -41,13 +41,15 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
   };
 
   const handleMultiColorChange = (color) => {
-    let newTemplate = { ...template };
-    selectedSlots.forEach(({ day, id }) => {
-      if (newTemplate[day]) {
-        newTemplate[day] = newTemplate[day].map(s => s.id === id ? { ...s, color } : s);
-      }
+    setTemplate(prev => {
+      let newTemplate = { ...prev };
+      selectedSlots.forEach(({ day, id }) => {
+        if (newTemplate[day]) {
+          newTemplate[day] = newTemplate[day].map(s => s.id === id ? { ...s, color } : s);
+        }
+      });
+      return newTemplate;
     });
-    setTemplate(newTemplate);
     setSelectedSlots([]);
   };
 
