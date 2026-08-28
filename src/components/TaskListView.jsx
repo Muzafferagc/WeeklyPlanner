@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { 
   CheckCircle2, Circle, Star, Calendar, Sun, Plus, Trash2, Edit3, 
   MoreHorizontal, ListFilter, ArrowUpDown, Share2, LayoutList, Table,
-  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat, Folder
+  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat, Folder, Copy, Image as ImageIcon
 } from 'lucide-react';
 import { 
   addCustomTask, 
@@ -39,6 +39,7 @@ const TaskListView = ({
   const [showRepeatPopover, setShowRepeatPopover] = useState(false);
 
   const [selectedTask, setSelectedTask] = useState(null);
+  const fileInputRef = useRef(null);
   const [dialog, setDialog] = useState({ isOpen: false, type: null, payload: null });
   const [showCompleted, setShowCompleted] = useState(true);
 
@@ -231,6 +232,25 @@ const TaskListView = ({
     await updateCustomTask(selectedTask.id, updatedFields);
     setSelectedTask(prev => ({ ...prev, ...updatedFields }));
     if (onRefreshData) onRefreshData();
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const currentImages = selectedTask.images || [];
+        const newImages = [...currentImages, { id: Date.now(), dataUrl: reader.result }];
+        handleUpdateTaskDetail({ images: newImages });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (id) => {
+    const currentImages = selectedTask.images || [];
+    const newImages = currentImages.filter(img => img.id !== id);
+    handleUpdateTaskDetail({ images: newImages });
   };
 
   const toggleDetailRepeatDay = (dayKey) => {
@@ -919,6 +939,34 @@ const TaskListView = ({
                 </select>
               </div>
 
+              {/* COPY TO ANOTHER LIST */}
+              <div className="task-detail-field">
+                <label><Copy size={18} /> Başka Listeye Kopyala</label>
+                <select
+                  value=""
+                  onChange={async (e) => {
+                    const targetListId = e.target.value;
+                    if (targetListId) {
+                      const newTask = {
+                        ...selectedTask,
+                        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                        listId: targetListId,
+                        createdAt: new Date().toISOString()
+                      };
+                      await addCustomTask(newTask);
+                      alert("✓ Görev başarıyla kopyalandı!");
+                      if (onRefreshData) onRefreshData();
+                    }
+                  }}
+                  className="task-detail-select"
+                >
+                  <option value="">Hedef listeyi seçip kopyala...</option>
+                  {customLists.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* NOTE TEXT AREA */}
               <div className="task-detail-field">
                 <label><FileText size={18} /> Not Ekle</label>
@@ -927,8 +975,52 @@ const TaskListView = ({
                   value={selectedTask.note || ''}
                   onChange={(e) => handleUpdateTaskDetail({ note: e.target.value })}
                   className="task-detail-textarea"
-                  rows={4}
+                  rows={6}
+                  style={{ fontSize: '15px', lineHeight: '1.6', padding: '12px' }}
                 />
+                
+                {/* Clickable Links Preview */}
+                {selectedTask.note && selectedTask.note.match(/https?:\/\/[^\s]+/g) && (
+                  <div className="task-links-preview" style={{ marginTop: '10px', padding: '10px', backgroundColor: 'var(--bg-hover)', borderRadius: '8px' }}>
+                    <strong><FileText size={14} style={{verticalAlign: 'middle', marginRight: '4px'}}/> Tıklanabilir Bağlantılar:</strong>
+                    <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+                      {Array.from(new Set(selectedTask.note.match(/https?:\/\/[^\s]+/g))).map((url, i) => (
+                        <li key={i} style={{ marginBottom: '4px' }}>
+                          <a href={url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all' }}>{url}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* IMAGES & ATTACHMENTS */}
+              <div className="task-detail-field">
+                <label><ImageIcon size={18} /> Ek Görseller / Dosyalar</label>
+                <div className="images-container">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    ref={fileInputRef} 
+                    onChange={handleImageUpload} 
+                    style={{display: 'none'}} 
+                  />
+                  <button type="button" className="btn-secondary add-image-btn" onClick={() => fileInputRef.current.click()}>
+                    <ImageIcon size={18} /> Yeni Görsel Yükle
+                  </button>
+                  
+                  <div className="image-grid">
+                    {(selectedTask.images || []).map(img => (
+                      <div key={img.id} className="image-card">
+                        <img src={img.dataUrl} alt="Eklenti" />
+                        <button type="button" className="delete-image-btn" onClick={() => removeImage(img.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {(!selectedTask.images || selectedTask.images.length === 0) && <p className="empty-state">Henüz görsel eklenmemiş.</p>}
+                </div>
               </div>
             </div>
 
