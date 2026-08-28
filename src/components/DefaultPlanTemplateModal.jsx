@@ -198,6 +198,7 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
                       <div className="slot-actions no-print">
                         <select
                           value={slot.color || 'gray'}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) => handleColorChange(day, slot.id, e.target.value)}
                           className="mini-color-select"
                           title="Renk Değiştir"
