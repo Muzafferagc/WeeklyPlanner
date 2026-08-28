@@ -4962,3 +4962,12 @@ body.drawer-open-lock {
 
 
 
+
+@media (max-width: 768px) {
+  .scene-header { flex-direction: column !important; align-items: flex-start !important; gap: 1rem !important; position: relative !important; padding-right: 3rem !important; }
+  .header-actions-box { flex-wrap: wrap !important; }
+  .header-actions-box .close-btn { position: absolute !important; top: 1rem !important; right: 1rem !important; }
+  .default-plan-overlay { padding: 0 !important; }
+  .full-scene-container { width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; border-radius: 0 !important; border: none !important; }
+  .default-plan-scene-body { height: calc(100vh - 120px) !important; max-height: calc(100vh - 120px) !important; }
+}
