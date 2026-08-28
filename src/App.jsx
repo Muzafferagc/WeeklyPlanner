@@ -28,7 +28,9 @@ import {
   getScheduleForWeek,
   copyWeekSchedule,
   getCustomLists,
-  getCustomTasks
+  getCustomTasks,
+  generateId,
+  resetDefaultScheduleTemplateToFactory
 } from './utils/storage';
 import { getSyncRoom, subscribeToCloudSync, broadcastToCloud } from './utils/syncService';
 import confetti from 'canvas-confetti';
