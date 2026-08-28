@@ -27,8 +27,24 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
   
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
-  
+  const [editingTopic, setEditingTopic] = useState(null);
   const [activeTopic, setActiveTopic] = useState(null);
+
+  // Swipe-to-close state
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    if (touchStart - touchEnd < -75) { // swiped right
+      setActiveTopic(null);
+    }
+  };
   const [newChecklistItem, setNewChecklistItem] = useState('');
   
   const [assignForm, setAssignForm] = useState({ weekId: currentWeekId || '', day: 'Pazartesi' });
@@ -383,10 +399,17 @@ export default function CourseDetailsView({ weeks, currentWeekId, onDataChange, 
       {/* TOPIC DETAIL DRAWER */}
       {activeTopic && (
         <div className="topic-drawer-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setActiveTopic(null)}>
-          <div className="topic-drawer" style={{ width: '100%', maxWidth: '450px', boxSizing: 'border-box', backgroundColor: 'var(--bg-color)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)', animation: 'slideInRight 0.3s ease' }} onClick={e => e.stopPropagation()}>
-            <div className="drawer-header" style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>Konu Detayları</h3>
-              <button onClick={() => setActiveTopic(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '4px' }}><X size={24}/></button>
+          <div 
+            className="topic-drawer" 
+            style={{ width: '100%', maxWidth: '450px', boxSizing: 'border-box', backgroundColor: 'var(--bg-color)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)', animation: 'slideInRight 0.3s ease' }} 
+            onClick={e => e.stopPropagation()}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            <div className="drawer-header" style={{ padding: 'max(20px, env(safe-area-inset-top, 20px)) 20px 20px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', paddingTop: '15px' }}>Konu Detayları</h3>
+              <button onClick={() => setActiveTopic(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '4px', marginTop: '15px' }}><X size={24}/></button>
             </div>
             
             <div className="drawer-body" style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>

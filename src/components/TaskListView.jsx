@@ -51,6 +51,22 @@ const TaskListView = ({
 
   const [selectedAddListId, setSelectedAddListId] = useState('');
 
+  // Swipe-to-close state
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    if (touchStart - touchEnd < -75) { // swiped right
+      setSelectedTask(null);
+    }
+  };
+
   React.useEffect(() => {
     if (currentList && !currentList.id?.startsWith('smart_')) {
       setSelectedAddListId(currentList.id);
@@ -822,8 +838,14 @@ const TaskListView = ({
       {/* TASK DETAIL DRAWER */}
       {selectedTask && (
         <div className="task-detail-modal-overlay" onClick={() => setSelectedTask(null)}>
-          <div className="task-detail-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="task-detail-header">
+          <div 
+            className="task-detail-modal" 
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            <div className="task-detail-header" style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))' }}>
               <button 
                 type="button" 
                 className="task-check-btn"
