@@ -102,10 +102,23 @@ export default function DefaultPlanTemplateModal({ isOpen, onClose, onApplyToCur
   };
 
   const handleColorChange = (day, slotId, color) => {
-    setTemplate({
-      ...template,
-      [day]: template[day].map(s => s.id === slotId ? { ...s, color } : s)
-    });
+    if (selectedSlots.some(s => s.id === slotId) && selectedSlots.length > 1) {
+      // Toplu renk değiştirme
+      const newTemplate = { ...template };
+      for (const dayKey in newTemplate) {
+        newTemplate[dayKey] = newTemplate[dayKey].map(s => 
+          selectedSlots.some(selected => selected.id === s.id) ? { ...s, color } : s
+        );
+      }
+      setTemplate(newTemplate);
+      setSelectedSlots([]); // Renk değiştikten sonra seçimi kaldır
+    } else {
+      // Tekli renk değiştirme
+      setTemplate({
+        ...template,
+        [day]: template[day].map(s => s.id === slotId ? { ...s, color } : s)
+      });
+    }
   };
 
   const handleSaveAll = async () => {
