@@ -320,9 +320,21 @@ function App() {
         }
         
         await saveDefaultScheduleTemplate(cleanTemplate);
-        alert('✓ Mevcut hafta başarıyla Varsayılan Plan Şablonu olarak kaydedildi!');
+        
+        // Debugging verification
+        const verifyTemplate = await getDefaultScheduleTemplate();
+        let colorCount = 0;
+        for (let day in verifyTemplate) {
+          if (Array.isArray(verifyTemplate[day])) {
+            verifyTemplate[day].forEach(s => {
+              if (s.color && s.color !== 'gray') colorCount++;
+            });
+          }
+        }
+        
+        alert(`✓ Şablon kaydedildi! Bulunan renkli slot sayısı: ${colorCount}`);
       } catch (err) {
-        alert('Şablon kaydedilirken bir hata oluştu.');
+        alert('Şablon kaydedilirken bir hata oluştu: ' + err.message);
       }
     }
   };
