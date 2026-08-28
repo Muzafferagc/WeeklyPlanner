@@ -228,19 +228,23 @@ function App() {
     setConfirmDialog({ isOpen: true, type: 'reset' });
   };
 
-  const handleConfirmReset = async (useFactory = false) => {
+  const handleConfirmReset = async (mode = 'factory') => {
     if (currentWeekId) {
       setConfirmDialog({ isOpen: false, type: null });
       let baseTemplate;
-      if (useFactory) {
-        baseTemplate = await resetDefaultScheduleTemplateToFactory();
-      } else {
+      if (mode === 'template') {
         baseTemplate = await getDefaultScheduleTemplate();
+      } else {
+        baseTemplate = await resetDefaultScheduleTemplateToFactory();
       }
       const freshSchedule = JSON.parse(JSON.stringify(baseTemplate));
       for (let day in freshSchedule) {
         if (Array.isArray(freshSchedule[day])) {
-          freshSchedule[day] = freshSchedule[day].map(s => ({ ...s, id: generateId() }));
+          freshSchedule[day] = freshSchedule[day].map(s => ({ 
+            ...s, 
+            id: generateId(),
+            completed: false 
+          }));
         }
       }
       await saveScheduleForWeek(currentWeekId, freshSchedule);
@@ -249,8 +253,8 @@ function App() {
       await broadcastCurrentState();
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 100,
+          spread: 80,
           origin: { y: 0.7 }
         });
       } catch (e) {}
@@ -614,11 +618,11 @@ function App() {
       <DialogModal 
         isOpen={confirmDialog.isOpen}
         title="Mevcut Haftayı Sıfırla"
-        message="Mevcut haftanız sıfırlanacaktır. Kayıtlı Varsayılan Plan Şablonunuza dönebilir veya Fabrika Ayarlarına (orijinal programa) sıfırlayabilirsiniz."
-        confirmText="Varsayılana Sıfırla"
-        secondaryConfirmText="Fabrika Ayarlarına Dön"
-        onConfirm={() => handleConfirmReset(false)}
-        onSecondaryConfirm={() => handleConfirmReset(true)}
+        message="Mevcut haftanızın tüm ders ve etkinlik başlıkları sıfırlanacaktır. Orijinal fabrika programına dönmek veya özel kayıtlı şablonunuza yüklemek için seçiminizi yapın:"
+        confirmText="Orijinal Programa Sıfırla (Fabrika)"
+        secondaryConfirmText="Kayıtlı Özel Şablonuma Dön"
+        onConfirm={() => handleConfirmReset('factory')}
+        onSecondaryConfirm={() => handleConfirmReset('template')}
         onCancel={() => setConfirmDialog({ isOpen: false, type: null })}
       />
 
