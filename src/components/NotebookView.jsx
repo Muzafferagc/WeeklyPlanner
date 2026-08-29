@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, Plus, ArrowLeft, ArrowRight, Image as ImageIcon, Eraser, PenTool, Type, Cloud, MousePointer2, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Plus, ArrowLeft, ArrowRight, Image as ImageIcon, Eraser, PenTool, Type, Cloud, MousePointer2, Trash, ChevronLeft, ChevronRight, Edit2 } from 'lucide-react';
 import { getNotebookData, saveNotebookData, generateId, exportData } from '../utils/storage';
 import { broadcastToCloud, getSyncRoom } from '../utils/syncService';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
@@ -226,27 +226,53 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     if (onDataChange) onDataChange();
   };
 
+  const handleRenameCategory = async (oldName) => {
+    if (oldName === 'Tümü') return;
+    const newName = window.prompt(`'${oldName}' kategorisinin yeni adı ne olsun?`, oldName);
+    if (newName && newName.trim() && newName.trim() !== oldName) {
+      const trimmed = newName.trim();
+      const newPages = pages.map(p => (p.category || 'Genel') === oldName ? { ...p, category: trimmed } : p);
+      setPages(newPages);
+      if (selectedCategory === oldName) setSelectedCategory(trimmed);
+      await saveNotebookData(newPages);
+      if (onDataChange) onDataChange();
+    }
+  };
+
+  const getCategoryColor = (categoryName) => {
+    if (categoryName === 'Tümü') return '#3b82f6';
+    if (categoryName === 'Genel') return '#8b5cf6';
+    
+    let hash = 0;
+    for (let i = 0; i < categoryName.length; i++) {
+      hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 75%, 55%)`;
+  };
+
   if (loading) return <div className="loading-screen">Defter Yükleniyor...</div>;
 
 
   return (
-    <div className="notebook-layout" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-color)', overflow: 'hidden' }}>
+    <div className="notebook-layout" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       
       {isOverview ? (
-        <div style={{ padding: '20px', overflowY: 'auto', flex: 1, backgroundColor: 'var(--bg-color)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-            <h2 style={{ margin: 0 }}>Defterlerim (Galerisi)</h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1, backgroundColor: '#f8fafc' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+            <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.5px' }}>Defterlerim</h2>
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 className="btn-primary" 
                 onClick={handleAddPage}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px', padding: '10px 16px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s' }}
               >
-                <Plus size={18} /> Yeni Sayfa
+                <Plus size={18} /> Yeni Defter
               </button>
               <button 
                 className="btn-secondary"
-                style={{ background: 'var(--primary)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ background: 'var(--primary)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px', padding: '10px 16px', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)', transition: 'all 0.2s', cursor: 'pointer' }}
                 onClick={handleManualSave}
                 title="Tüm verileri buluta kaydet"
               >
@@ -255,25 +281,37 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  border: '1px solid var(--primary)',
-                  backgroundColor: selectedCategory === cat ? 'var(--primary)' : 'transparent',
-                  color: selectedCategory === cat ? '#fff' : 'var(--primary)',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {cat}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', overflowX: 'auto', paddingBottom: '12px', alignItems: 'center' }}>
+            {categories.map(cat => {
+              const isSelected = selectedCategory === cat;
+              const catColor = getCategoryColor(cat);
+              return (
+                <div key={cat} style={{ display: 'flex', alignItems: 'center', backgroundColor: isSelected ? catColor : '#fff', borderRadius: '24px', padding: '4px 6px 4px 16px', border: `1px solid ${isSelected ? catColor : '#e2e8f0'}`, boxShadow: isSelected ? `0 4px 12px ${catColor}40` : '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }}>
+                  <span
+                    onClick={() => setSelectedCategory(cat)}
+                    style={{
+                      color: isSelected ? '#fff' : '#475569',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      whiteSpace: 'nowrap',
+                      marginRight: cat !== 'Tümü' && isSelected ? '8px' : '8px'
+                    }}
+                  >
+                    {cat}
+                  </span>
+                  {cat !== 'Tümü' && isSelected && (
+                    <button
+                      onClick={() => handleRenameCategory(cat)}
+                      title="Kategoriyi Düzenle"
+                      style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
             <button
               onClick={async () => {
                 const newCat = window.prompt("Yeni kategori adı:");
@@ -282,68 +320,105 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                 }
               }}
               style={{
-                padding: '8px 16px',
-                borderRadius: '20px',
-                border: '1px dashed var(--primary)',
+                padding: '10px 16px',
+                borderRadius: '24px',
+                border: '2px dashed #cbd5e1',
                 backgroundColor: 'transparent',
-                color: 'var(--primary)',
+                color: '#64748b',
                 cursor: 'pointer',
-                fontWeight: 'bold',
-                whiteSpace: 'nowrap'
+                fontWeight: '600',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s',
               }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#64748b'; }}
             >
-              + Kategori Ekle
+              + Yeni Klasör
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
-            {filteredPages.map(page => (
-              <div 
-                key={page.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, page.id)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, page.id)}
-                onClick={() => {
-                  setActivePageId(page.id);
-                  setIsOverview(false);
-                }}
-                style={{
-                  backgroundColor: '#fff',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-                  transition: 'transform 0.2s, box-shadow 0.2s'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                onMouseOut={(e) => e.currentTarget.style.transform = 'none'}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '12px', backgroundColor: 'var(--bg-hover)', color: 'var(--text-light)', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
-                    {page.category || 'Genel'}
-                  </span>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
-                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
+            {filteredPages.map(page => {
+              const pageCatColor = getCategoryColor(page.category || 'Genel');
+              return (
+                <div 
+                  key={page.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, page.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, page.id)}
+                  onClick={() => {
+                    setActivePageId(page.id);
+                    setIsOverview(false);
+                  }}
+                  style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
+                    transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
+                  }}
+                >
+                  <div style={{ height: '8px', width: '100%', backgroundColor: pageCatColor }} />
+                  
+                  <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '11px', backgroundColor: `${pageCatColor}15`, color: pageCatColor, padding: '4px 10px', borderRadius: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {page.category || 'Genel'}
+                      </span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
+                        style={{ background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '4px', transition: 'color 0.2s' }}
+                        onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                        onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1e293b', lineHeight: '1.3' }}>{page.title}</h3>
+                    
+                    <div style={{ 
+                      flex: 1, 
+                      backgroundColor: '#f8fafc', 
+                      borderRadius: '8px', 
+                      minHeight: '120px', 
+                      backgroundImage: 'repeating-linear-gradient(#f1f5f9 0, #f1f5f9 1px, transparent 1px, transparent 24px)',
+                      backgroundSize: '100% 24px',
+                      backgroundPositionY: '8px',
+                      border: '1px solid #e2e8f0',
+                      position: 'relative'
+                    }}>
+                      <div style={{ position: 'absolute', left: '16px', top: 0, bottom: 0, width: '2px', backgroundColor: '#ef4444', opacity: 0.2 }} />
+                    </div>
+                    
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>
+                      Oluşturulma: {new Date(page.createdAt).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'var(--text-color)' }}>{page.title}</h3>
-                <div style={{ flex: 1, backgroundColor: '#fdfbc8', borderRadius: '8px', minHeight: '100px', opacity: 0.7, backgroundImage: 'repeating-linear-gradient(transparent, transparent 23px, #e0d9b4 23px, #e0d9b4 24px)', border: '1px solid #e0d9b4' }} />
-                <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>
-                  {new Date(page.createdAt).toLocaleDateString('tr-TR')}
-                </span>
-              </div>
-            ))}
+              );
+            })}
             {filteredPages.length === 0 && (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-light)' }}>
-                Bu kategoride hiç sayfa yok.
+              <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', backgroundColor: '#fff', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', color: '#94a3b8' }}>
+                  <MousePointer2 size={24} />
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '18px' }}>Bu klasör henüz boş</h3>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '14px', textAlign: 'center' }}>Hemen sağ üstten "Yeni Defter" oluşturarak not almaya başlayabilirsin.</p>
               </div>
             )}
           </div>
