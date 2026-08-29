@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getNotebookData, saveNotebookData, generateId } from '../utils/storage';
-import { Plus, Trash2, Image as ImageIcon, PenTool, MousePointer2, Eraser, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Plus, ArrowLeft, ArrowRight, Image as ImageIcon, Eraser, PenTool, Type, Cloud, MousePointer2, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getNotebookData, saveNotebookData, generateId, exportData } from '../utils/storage';
+import { broadcastToCloud, getSyncRoom } from '../utils/syncService';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import Draggable from 'react-draggable';
 
@@ -149,6 +150,18 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     if (onDataChange) onDataChange();
   };
 
+  const handleManualSave = async () => {
+    try {
+      // Need to make sure notebook pages are saved locally before exporting
+      await saveNotebookData(pages);
+      const fullState = JSON.parse(await exportData(null, null));
+      await broadcastToCloud(getSyncRoom(), fullState);
+      alert('Defteriniz başarıyla buluta kaydedildi! ✓');
+    } catch(e) {
+      alert('Kaydedilirken bir hata oluştu.');
+    }
+  };
+
   const clearCanvas = async () => {
     if (window.confirm("Tüm çizimleri silmek istediğinize emin misiniz?")) {
       canvasRef.current.clearCanvas();
@@ -191,6 +204,14 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
             />
             
             <div className="toolbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button 
+                className="delete-btn-hover"
+                style={{ background: 'var(--primary)', border: 'none', color: '#fff', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}
+                onClick={handleManualSave}
+                title="Tüm verileri buluta kaydet"
+              >
+                <Cloud size={16}/> Buluta Kaydet
+              </button>
               <button 
                 className="delete-btn-hover"
                 style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '6px' }}

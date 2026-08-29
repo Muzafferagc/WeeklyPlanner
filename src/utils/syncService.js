@@ -33,14 +33,26 @@ export const fetchCloudState = async () => {
 let realtimeChannel = null;
 let pollInterval = null;
 
+let lastCloudString = '';
+
 export const subscribeToCloudSync = async (roomId, onDataReceived) => {
   const supabase = getSupabaseClient();
   if (!supabase) return;
 
+  const handleData = (data) => {
+    try {
+      const dataStr = JSON.stringify(data);
+      if (dataStr !== lastCloudString) {
+        lastCloudString = dataStr;
+        onDataReceived(data);
+      }
+    } catch(e) {}
+  };
+
   // 1. Initial Fetch
   const initial = await fetchCloudState();
   if (initial) {
-    onDataReceived(initial);
+    handleData(initial);
   }
 
   // 2. Setup Supabase Realtime WebSocket Listener
@@ -59,7 +71,7 @@ export const subscribeToCloudSync = async (roomId, onDataReceived) => {
         { event: '*', schema: 'public', table: 'sync_data', filter: 'id=eq.MUZAFFER-PLAN-2026' },
         (payload) => {
           if (payload.new && payload.new.data && Array.isArray(payload.new.data.weeks)) {
-            onDataReceived(payload.new.data);
+            handleData(payload.new.data);
           }
         }
       )
@@ -70,13 +82,16 @@ export const subscribeToCloudSync = async (roomId, onDataReceived) => {
   pollInterval = setInterval(async () => {
     const latest = await fetchCloudState();
     if (latest) {
-      onDataReceived(latest);
+      handleData(latest);
     }
   }, 2500);
 };
 
 export const broadcastToCloud = async (roomId, fullState) => {
   try {
+    const dataStr = JSON.stringify(fullState);
+    lastCloudString = dataStr; // Optimistically update local cache
+    
     const supabase = getSupabaseClient();
     if (!supabase) return;
 

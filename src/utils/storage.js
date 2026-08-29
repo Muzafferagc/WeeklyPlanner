@@ -482,6 +482,7 @@ export const bulkMoveCustomTasksToList = async (taskIds, targetListId) => {
   return updatedTasks;
 };
 
+
 export const bulkToggleMyDay = async (taskIds, inMyDay = true) => {
   if (!Array.isArray(taskIds) || taskIds.length === 0) return [];
   const tasks = await getCustomTasks();
@@ -489,7 +490,6 @@ export const bulkToggleMyDay = async (taskIds, inMyDay = true) => {
   await saveCustomTasks(updatedTasks);
   return updatedTasks;
 };
-
 
 export const exportData = async (weekIds = null, activeWeekId = null) => {
   let weeks = await getWeeks();
@@ -501,6 +501,7 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
   const courseDetailsData = await getCourseDetailsData();
   const customLists = await getCustomLists();
   const customTasks = await getCustomTasks();
+  const notebookPages = await getNotebookData();
 
   const data = {
     exportedAt: new Date().toISOString(),
@@ -510,7 +511,8 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
     customDefaultSchedule: await localforage.getItem('customDefaultSchedule'),
     courseDetailsData,
     customLists,
-    customTasks
+    customTasks,
+    notebookPages
   };
 
   for (let w of weeks) {
@@ -532,7 +534,9 @@ export const importData = async (jsonData) => {
     const cleanWeeks = deduplicateWeeks(data.weeks);
     if (cleanWeeks.length === 0) return false;
 
-    await localforage.clear();
+    // DO NOT clear localforage to prevent wiping unsynced data
+    // await localforage.clear();
+    
     await localforage.setItem('weeks', cleanWeeks);
 
     if (data.customDefaultSchedule) {
@@ -551,6 +555,10 @@ export const importData = async (jsonData) => {
       await localforage.setItem('custom_tasks', data.customTasks);
     }
 
+    if (data.notebookPages && Array.isArray(data.notebookPages)) {
+      await localforage.setItem('notebook_pages', data.notebookPages);
+    }
+
     for (const weekId of Object.keys(data.schedules)) {
       if (data.schedules[weekId]) {
         await localforage.setItem(`schedule_${weekId}`, data.schedules[weekId]);
@@ -567,7 +575,6 @@ export const importData = async (jsonData) => {
     return false;
   }
 };
-
 
 export const updateWeekDate = async (weekId, chosenDateStr) => {
   const weeks = await getWeeks();

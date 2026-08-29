@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode, Trash2, Bell, Save } from 'lucide-react';
+import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Copy, BookOpen, CalendarDays, Smartphone, Wifi, QrCode, Trash2, Bell, Save, Cloud } from 'lucide-react';
 import WeeklySchedule from './components/WeeklySchedule';
 import CourseDetailsView from './components/CourseDetailsView';
 import NotebookView from './components/NotebookView';
@@ -330,6 +330,16 @@ function App() {
     }
   };
 
+  const handleManualSave = async () => {
+    try {
+      const fullState = JSON.parse(await exportData(null, currentWeekId));
+      await broadcastToCloud(getSyncRoom(), fullState);
+      alert('Tüm verileriniz başarıyla buluta kaydedildi! ✓');
+    } catch(e) {
+      alert('Kaydedilirken bir hata oluştu.');
+    }
+  };
+
   const handleExport = async (weekIds = null) => {
     const jsonStr = await exportData(weekIds, currentWeekId);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -530,6 +540,15 @@ function App() {
                 >
                   <Smartphone size={18} />
                   <span className="btn-text-responsive">Mobil / QR Bağlan</span>
+                </button>
+                <button 
+                  className="print-btn sync-btn-highlight" 
+                  onClick={handleManualSave} 
+                  title="Tüm verileri buluta kaydet"
+                  style={{ backgroundColor: 'var(--primary)', color: 'white', borderColor: 'var(--primary)' }}
+                >
+                  <Cloud size={18} />
+                  <span className="btn-text-responsive">Buluta Kaydet</span>
                 </button>
 
                 {activeTab === 'schedule' && (
