@@ -601,12 +601,16 @@ export const resetAllData = async () => {
 export const getNotebookData = async () => {
   try {
     const data = await localforage.getItem('notebook_pages');
-    if (data) return data;
+    if (data && Array.isArray(data)) {
+      // Backfill category for existing pages
+      return data.map(p => ({ ...p, category: p.category || 'Genel' }));
+    }
     
     // Default initial data
     const initial = [{
       id: generateId(),
       title: 'İlk Sayfam',
+      category: 'Genel',
       content: 'Bu sayfada çizim yapabilir, fotoğraf ekleyebilir ve notlar alabilirsiniz.',
       drawingData: null,
       images: [],

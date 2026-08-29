@@ -10,6 +10,10 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   const [activePageId, setActivePageId] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  // Overview state
+  const [isOverview, setIsOverview] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('Tümü');
+  
   // Drawing state
   const [drawMode, setDrawMode] = useState(false);
   const [strokeColor, setStrokeColor] = useState('#2b2b2b');
@@ -78,6 +82,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     const newPage = {
       id: generateId(),
       title: `Sayfa ${pages.length + 1}`,
+      category: selectedCategory === 'Tümü' ? 'Genel' : selectedCategory,
       content: '',
       drawingData: null,
       images: [],
@@ -86,6 +91,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     const newPages = [...pages, newPage];
     setPages(newPages);
     setActivePageId(newPage.id);
+    setIsOverview(false);
     await saveNotebookData(newPages);
     if (onDataChange) onDataChange();
   };
@@ -183,25 +189,197 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     }
   };
 
+
+  const handleDragStart = (e, id) => {
+    e.dataTransfer.setData('text/plain', id);
+  };
+  
+  const handleDrop = async (e, targetId) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if (!draggedId || draggedId === targetId) return;
+    
+    const newPages = [...pages];
+    const draggedIndex = newPages.findIndex(p => p.id === draggedId);
+    const targetIndex = newPages.findIndex(p => p.id === targetId);
+    
+    const [draggedItem] = newPages.splice(draggedIndex, 1);
+    newPages.splice(targetIndex, 0, draggedItem);
+    
+    setPages(newPages);
+    await saveNotebookData(newPages);
+    if (onDataChange) onDataChange();
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const categories = ['Tümü', ...new Set(pages.map(p => p.category || 'Genel'))];
+  const filteredPages = selectedCategory === 'Tümü' ? pages : pages.filter(p => (p.category || 'Genel') === selectedCategory);
+  
+  const changeActivePageCategory = async (newCategory) => {
+    if (!activePageId) return;
+    const newPages = pages.map(p => p.id === activePageId ? { ...p, category: newCategory } : p);
+    setPages(newPages);
+    await saveNotebookData(newPages);
+    if (onDataChange) onDataChange();
+  };
+
   if (loading) return <div className="loading-screen">Defter Yükleniyor...</div>;
+
 
   return (
     <div className="notebook-layout" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-color)', overflow: 'hidden' }}>
       
-      {activePage ? (
+      {isOverview ? (
+        <div style={{ padding: '20px', overflowY: 'auto', flex: 1, backgroundColor: 'var(--bg-color)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <h2 style={{ margin: 0 }}>Defterlerim (Galerisi)</h2>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className="btn-primary" 
+                onClick={handleAddPage}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={18} /> Yeni Sayfa
+              </button>
+              <button 
+                className="btn-secondary"
+                style={{ background: 'var(--primary)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={handleManualSave}
+                title="Tüm verileri buluta kaydet"
+              >
+                <Cloud size={18}/> Buluta Kaydet
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  border: '1px solid var(--primary)',
+                  backgroundColor: selectedCategory === cat ? 'var(--primary)' : 'transparent',
+                  color: selectedCategory === cat ? '#fff' : 'var(--primary)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+            <button
+              onClick={async () => {
+                const newCat = window.prompt("Yeni kategori adı:");
+                if (newCat && newCat.trim()) {
+                  setSelectedCategory(newCat.trim());
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: '1px dashed var(--primary)',
+                backgroundColor: 'transparent',
+                color: 'var(--primary)',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              + Kategori Ekle
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+            {filteredPages.map(page => (
+              <div 
+                key={page.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, page.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, page.id)}
+                onClick={() => {
+                  setActivePageId(page.id);
+                  setIsOverview(false);
+                }}
+                style={{
+                  backgroundColor: '#fff',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                  transition: 'transform 0.2s, box-shadow 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'none'}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '12px', backgroundColor: 'var(--bg-hover)', color: 'var(--text-light)', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    {page.category || 'Genel'}
+                  </span>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'var(--text-color)' }}>{page.title}</h3>
+                <div style={{ flex: 1, backgroundColor: '#fdfbc8', borderRadius: '8px', minHeight: '100px', opacity: 0.7, backgroundImage: 'repeating-linear-gradient(transparent, transparent 23px, #e0d9b4 23px, #e0d9b4 24px)', border: '1px solid #e0d9b4' }} />
+                <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>
+                  {new Date(page.createdAt).toLocaleDateString('tr-TR')}
+                </span>
+              </div>
+            ))}
+            {filteredPages.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-light)' }}>
+                Bu kategoride hiç sayfa yok.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : activePage ? (
         <>
           {/* TOPBAR */}
           <div className="notebook-toolbar no-print" style={{ 
             padding: '12px 16px', backgroundColor: '#fff', borderBottom: '1px solid var(--border-color)', 
             display: 'flex', gap: '12px', alignItems: 'center', zIndex: 10, flexWrap: 'wrap'
           }}>
+            <button
+              onClick={() => setIsOverview(true)}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
+            >
+              <ArrowLeft size={18} /> Tüm Sayfalar
+            </button>
+            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 8px' }} />
             <input 
               type="text" 
               value={activePage.title}
               onChange={e => handleSavePageTitle(activePage.id, e.target.value)}
-              style={{ fontSize: '18px', fontWeight: 'bold', border: 'none', outline: 'none', background: 'transparent', minWidth: '150px', flex: '1 1 auto' }}
+              style={{ fontSize: '18px', fontWeight: 'bold', border: 'none', outline: 'none', background: 'transparent', minWidth: '120px', flex: '1 1 auto' }}
               placeholder="Sayfa Başlığı"
             />
+            
+            <select
+              value={activePage.category || 'Genel'}
+              onChange={e => changeActivePageCategory(e.target.value)}
+              style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '13px' }}
+            >
+              {categories.filter(c => c !== 'Tümü').map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+              <option value="_new">+ Yeni Kategori</option>
+            </select>
             
             <div className="toolbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <button 
@@ -211,6 +389,19 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                 title="Tüm verileri buluta kaydet"
               >
                 <Cloud size={16}/> Buluta Kaydet
+              </button>
+              <button 
+                className="delete-btn-hover"
+                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '6px' }}
+                onClick={() => {
+                  handleDeletePage(activePage.id);
+                  if (pages.length <= 1) {
+                    setIsOverview(true);
+                  }
+                }}
+                title="Sayfayı Sil"
+              >
+                <Trash2 size={18}/>
               </button>
               <button 
                 className="delete-btn-hover"
