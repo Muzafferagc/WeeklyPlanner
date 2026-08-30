@@ -49,14 +49,10 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   }, [isEraser]);
 
   useEffect(() => {
-    try {
-      if (activePage && canvasRef.current && activePage.drawingData) {
-        canvasRef.current.loadPaths(activePage.drawingData);
-      } else if (canvasRef.current) {
-        canvasRef.current.clearCanvas();
-      }
-    } catch (e) {
-      console.warn("Canvas load warning:", e);
+    if (activePage && canvasRef.current && activePage.drawingData) {
+      canvasRef.current.loadPaths(activePage.drawingData);
+    } else if (canvasRef.current) {
+      canvasRef.current.clearCanvas();
     }
   }, [activePageId]);
 
@@ -582,9 +578,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                 style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '6px' }}
                 onClick={() => {
                   handleDeletePage(activePage.id);
-                  if (pages.length <= 1) {
-                    setIsOverview(true);
-                  }
+                  setIsOverview(true);
                 }}
                 title="Sayfayı Sil"
               >
@@ -603,7 +597,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
               
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', fontSize: '14px', fontWeight: '500' }}>
                 <ImageIcon size={16}/> <span className="hide-on-mobile">Fotoğraf Ekle</span>
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAddImage} />
               </label>
 
               <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)' }}></div>
