@@ -63,7 +63,7 @@ const Sidebar = ({
   // Compute Task Counts for Smart Views
   const myDayCount = useMemo(() => customTasks.filter(t => !t.completed && (t.inMyDay || t.dueDateLabel === 'Bugün')).length, [customTasks]);
   const importantCount = useMemo(() => customTasks.filter(t => !t.completed && t.starred).length, [customTasks]);
-  const plannedCount = useMemo(() => customTasks.filter(t => !t.completed && (t.dueDate || t.dueDateLabel)).length, [customTasks]);
+  const plannedCount = useMemo(() => customTasks.filter(t => !t.completed && (t.listId === 'smart_planned' || t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none'))).length, [customTasks]);
   const allTasksCount = useMemo(() => customTasks.filter(t => !t.completed && (!t.listId || t.listId === 'smart_all')).length, [customTasks]);
 
   // Compute task count per custom list

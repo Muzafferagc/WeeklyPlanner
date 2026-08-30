@@ -709,7 +709,7 @@ function App() {
               onDataChange={broadcastCurrentState}
             />
           )}
-          {activeTab !== 'schedule' && activeTab !== 'details' && activeTab !== 'notebook' && (
+          {activeTab !== 'schedule' && activeTab !== 'details' && activeTab !== 'notebook' && activeTab !== 'smart_calendar' && activeTab !== 'settings' && (
             <TaskListView 
               key={activeTab}
               currentList={currentListObj}

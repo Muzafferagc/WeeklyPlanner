@@ -29,7 +29,8 @@ const TaskListView = ({
   onRefreshData,
   onNavigateToList
 }) => {
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'table' | 'calendar'
+  const [viewMode, setViewMode] = useState('list');
+  const [collapsedGroups, setCollapsedGroups] = useState({'Tamamlananlar': true}); // 'list' | 'table' | 'calendar'
   const [sortOption, setSortOption] = useState('date'); // 'date' | 'title' | 'star' | 'dueDate'
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
@@ -130,6 +131,8 @@ const TaskListView = ({
       pressTimerRef.current = null;
     }
   };
+
+  const toggleGroupCollapse = (title) => setCollapsedGroups(prev => ({...prev, [title]: !prev[title]}));
 
   const handleTaskCardClick = (task, e) => {
     if (isSelectMode || (e && (e.ctrlKey || e.metaKey || e.shiftKey))) {
@@ -626,20 +629,40 @@ const TaskListView = ({
               else groups['Daha Sonra'].push(t);
             });
 
+            
             const renderGroup = (title, tasks, isCompleted = false) => {
               if (tasks.length === 0) return null;
+              const isCollapsed = collapsedGroups[title];
               return (
                 <div key={title} style={{marginBottom: '2rem'}}>
-                  <h3 style={{fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem'}}>
+                  <h3 
+                    onClick={() => toggleGroupCollapse(title)}
+                    style={{
+                      fontSize: '1.05rem', 
+                      fontWeight: '700', 
+                      color: 'var(--text-muted)', 
+                      borderBottom: '1px solid var(--border-color)', 
+                      paddingBottom: '0.5rem', 
+                      marginBottom: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      userSelect: 'none'
+                    }}
+                  >
+                    {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     {title} ({tasks.length})
                   </h3>
-                  {tasks.map(task => {
+                  
+                  {!isCollapsed && tasks.map(task => {
                     const isSelected = selectedTaskIds.includes(task.id);
                     return (
                       <div 
                         key={task.id} 
                         className={`task-item-card ${task.completed ? 'completed' : ''} ${selectedTask?.id === task.id ? 'selected' : ''} ${isSelected ? 'bulk-selected' : ''}`}
                         onClick={(e) => handleTaskCardClick(task, e)}
+                        style={{ position: 'relative' }}
                       >
                         {isSelectMode ? (
                           <div className={`bulk-checkbox ${isSelected ? 'checked' : ''}`}>
@@ -654,7 +677,7 @@ const TaskListView = ({
                             {task.completed ? <CheckCircle2 size={22} /> : <Circle size={22} />}
                           </button>
                         )}
-                        <div className="task-item-content">
+                        <div className="task-item-content" style={{ paddingRight: '2rem' }}>
                           <h4 className="task-item-title">{task.title}</h4>
                           <div className="task-item-badges">
                             {task.dueDateLabel && (
@@ -671,6 +694,16 @@ const TaskListView = ({
                             )}
                           </div>
                         </div>
+                        {/* HIZLI SILME BUTONU (SADECE GRUPLU GORUNUM ICIN) */}
+                        <button 
+                          type="button"
+                          className="icon-btn-subtle text-danger"
+                          style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', padding: '6px' }}
+                          onClick={(e) => onRequestDeleteTask(task, e)}
+                          title="Görevi Sil"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     );
                   })}
