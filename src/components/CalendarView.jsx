@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Plus, LayoutList, X, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Check, Calendar as CalendarIcon } from 'lucide-react';
 
 const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -22,6 +22,9 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
   const prevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
 
+  const handleMonthChange = (e) => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1));
+  const handleYearChange = (e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1));
+
   const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
   const dayNames = ["P", "S", "Ç", "P", "C", "C", "P"]; 
 
@@ -38,14 +41,49 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
 
   const pad = n => n < 10 ? '0' + n : n;
 
+  const isTaskOnDate = (task, dateObj) => {
+    const taskDateStr = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
+    
+    if (task.dueDate === taskDateStr) return true;
+    
+    // Check if it's a repeating task
+    if (task.repeatType && task.repeatType !== 'none') {
+      const createdDate = new Date(task.createdAt || task.dueDate || Date.now());
+      createdDate.setHours(0,0,0,0);
+      const targetDate = new Date(dateObj);
+      targetDate.setHours(0,0,0,0);
+      
+      // Task hasn't been created yet
+      if (targetDate < createdDate) return false;
+      
+      // If it has a dueDate, it acts as the END date of the repeat
+      if (task.dueDate) {
+         const end = new Date(task.dueDate);
+         end.setHours(0,0,0,0);
+         if (targetDate > end) return false;
+      }
+      
+      const dayOfWeek = targetDate.getDay(); // 0=Sunday, 1=Monday...
+      
+      if (task.repeatType === 'daily') return true;
+      if (task.repeatType === 'weekdays' && dayOfWeek >= 1 && dayOfWeek <= 5) return true;
+      if (task.repeatType === 'weekend' && (dayOfWeek === 0 || dayOfWeek === 6)) return true;
+      if (task.repeatType === 'weekly' && targetDate.getDay() === createdDate.getDay()) return true;
+      
+      if (task.repeatType === 'custom' && task.repeatDays && task.repeatDays.length > 0) {
+        const dayNamesMap = { 0: 'Pazar', 1: 'Pazartesi', 2: 'Salı', 3: 'Çarşamba', 4: 'Perşembe', 5: 'Cuma', 6: 'Cumartesi' };
+        const currentDayName = dayNamesMap[dayOfWeek];
+        if (task.repeatDays.includes(currentDayName)) return true;
+      }
+    }
+    
+    return false;
+  };
+
   const getTasksForDate = (dayNum) => {
     if (!dayNum) return [];
-    const dateStr = `${currentYear}-${pad(currentMonth + 1)}-${pad(dayNum)}`;
-    return tasks.filter(t => {
-      if (t.dueDate === dateStr) return true;
-      if (t.dueDateLabel && t.dueDateLabel.startsWith(dayNum.toString() + ' ' + monthNames[currentMonth])) return true;
-      return false;
-    });
+    const targetDate = new Date(currentYear, currentMonth, dayNum);
+    return tasks.filter(t => isTaskOnDate(t, targetDate));
   };
 
   const handleDayClick = (dayNum) => {
@@ -76,6 +114,12 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
     return colors[sum % colors.length];
   };
 
+  const generateYearOptions = () => {
+    const years = [];
+    for(let y = 2020; y <= 2040; y++) years.push(y);
+    return years;
+  };
+
   return (
     <div className="apple-calendar-container" style={{ 
       backgroundColor: 'var(--bg-color)', 
@@ -87,17 +131,26 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
     }}>
       
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
-        <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '1.2rem', display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 0 }}>
-          <ChevronLeft size={24} /> <span style={{ marginLeft: '4px' }}>{currentYear}</span>
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CalendarIcon size={24} color="var(--primary)" />
+          
+          <select value={currentMonth} onChange={handleMonthChange} style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', outline: 'none' }}>
+            {monthNames.map((m, i) => <option key={i} value={i} style={{color: 'var(--text-main)', backgroundColor: 'var(--bg-color)'}}>{m}</option>)}
+          </select>
+          
+          <select value={currentYear} onChange={handleYearChange} style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', outline: 'none' }}>
+            {generateYearOptions().map(y => <option key={y} value={y} style={{color: 'var(--text-main)', backgroundColor: 'var(--bg-color)'}}>{y}</option>)}
+          </select>
+        </div>
+        
         <div style={{ display: 'flex', gap: '16px' }}>
+          <button style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0 }} onClick={prevMonth}><ChevronLeft size={24} /></button>
+          <button onClick={() => setCurrentDate(new Date())} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '1rem', cursor: 'pointer', fontWeight: '600' }}>
+            Bugün
+          </button>
           <button style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0 }} onClick={nextMonth}><ChevronRight size={24} /></button>
         </div>
-      </div>
-
-      <div style={{ padding: '0 20px' }}>
-        <h1 style={{ fontSize: '2.2rem', fontWeight: 'bold', margin: '10px 0 20px 0' }}>{monthNames[currentMonth]}</h1>
       </div>
 
       {/* DAYS ROW */}
@@ -127,8 +180,12 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                backgroundColor: 'var(--bg-color)'
+                backgroundColor: 'var(--bg-color)',
+                transition: 'background-color 0.2s',
+                minHeight: '100px'
               }}
+              onMouseOver={e => { if(dayNum) e.currentTarget.style.backgroundColor = 'var(--c-gray-bg)' }}
+              onMouseOut={e => { if(dayNum) e.currentTarget.style.backgroundColor = 'var(--bg-color)' }}
             >
               {dayNum && (
                 <>
@@ -151,14 +208,14 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
 
                   {/* TASKS LIST INSIDE CELL */}
                   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    {dayTasks.slice(0, 3).map(task => {
+                    {dayTasks.slice(0, 4).map(task => {
                       const c = getTaskColor(task.id);
                       return (
                         <div key={task.id} 
                              onClick={(e) => { e.stopPropagation(); if(onTaskClick) onTaskClick(task); }}
                              style={{
                                display: 'flex', alignItems: 'center', gap: '4px',
-                               backgroundColor: 'var(--bg-color)', padding: '3px 4px', borderRadius: '4px',
+                               backgroundColor: 'var(--c-gray-bg)', padding: '3px 4px', borderRadius: '4px',
                                opacity: task.completed ? 0.5 : 1
                              }}>
                           <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: c, flexShrink: 0 }} />
@@ -168,8 +225,8 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
                         </div>
                       )
                     })}
-                    {dayTasks.length > 3 && (
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center' }}>+{dayTasks.length - 3} daha</div>
+                    {dayTasks.length > 4 && (
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center' }}>+{dayTasks.length - 4} daha</div>
                     )}
                   </div>
                 </>
@@ -179,17 +236,10 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
         })}
       </div>
 
-      {/* BOTTOM ACTION BAR */}
-      <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)' }}>
-        <button onClick={() => setCurrentDate(new Date())} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '1.1rem', cursor: 'pointer' }}>
-          Bugün
-        </button>
-      </div>
-
       {/* ADD TASK MODAL OVERLAY */}
       {addingTaskForDate && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setAddingTaskForDate(null)}>
-          <div style={{ backgroundColor: 'var(--bg-color)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ backgroundColor: 'var(--bg-color)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{addingTaskForDate} İçin Görev Ekle</span>
               <button onClick={() => setAddingTaskForDate(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20}/></button>

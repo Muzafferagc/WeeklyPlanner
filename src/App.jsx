@@ -218,7 +218,13 @@ function App() {
     root.style.setProperty('--app-font-family', getFontString(settings.appFontFamily));
     root.style.setProperty('--notebook-font-family', getFontString(settings.notebookFontFamily));
     root.style.setProperty('--app-font-size-base', getSizeString(settings.appFontSize));
-    root.style.setProperty('--notebook-font-size-base', getSizeString(settings.notebookFontSize));
+        root.style.setProperty('--notebook-font-size-base', getSizeString(settings.notebookFontSize));
+    
+    // Scale entire app for size changes since there are 180+ hardcoded px rules
+    let zoomLevel = '1';
+    if (settings.appFontSize === 'small') zoomLevel = '0.9';
+    if (settings.appFontSize === 'large') zoomLevel = '1.1';
+    document.body.style.zoom = zoomLevel;
   };
 
   const handleCreateWeek = async (mode = 'next', customDate = null) => {
