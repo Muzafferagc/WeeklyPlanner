@@ -198,19 +198,27 @@ function App() {
   const applySettingsToDOM = (settings) => {
     const root = document.documentElement;
     
-    // Apply Font Family
-    let fontName = 'Inter, system-ui, sans-serif';
-    if (settings.appFontFamily === 'Roboto') fontName = 'Roboto, sans-serif';
-    if (settings.appFontFamily === 'Outfit') fontName = 'Outfit, sans-serif';
-    if (settings.appFontFamily === 'Comic Sans MS') fontName = '"Comic Sans MS", cursive';
-    if (settings.appFontFamily === 'Times New Roman') fontName = '"Times New Roman", serif';
-    root.style.setProperty('--app-font-family', fontName);
+    // Determine font name string
+    const getFontString = (val) => {
+      if (val === 'Roboto') return 'Roboto, sans-serif';
+      if (val === 'Outfit') return 'Outfit, sans-serif';
+      if (val === '"Comic Sans MS", "Comic Sans", cursive' || val === 'Comic Sans MS') return '"Comic Sans MS", "Comic Sans", cursive';
+      if (val === 'Caveat') return 'Caveat, cursive';
+      if (val === '"Times New Roman", serif' || val === 'Times New Roman') return '"Times New Roman", serif';
+      return 'Inter, system-ui, sans-serif';
+    };
 
-    // Apply Font Size
-    let baseSize = '14px';
-    if (settings.appFontSize === 'small') baseSize = '12px';
-    if (settings.appFontSize === 'large') baseSize = '16px';
-    root.style.setProperty('--app-font-size-base', baseSize);
+    // Determine font size string
+    const getSizeString = (val) => {
+      if (val === 'small') return '14px';
+      if (val === 'large') return '18px';
+      return '16px';
+    };
+
+    root.style.setProperty('--app-font-family', getFontString(settings.appFontFamily));
+    root.style.setProperty('--notebook-font-family', getFontString(settings.notebookFontFamily));
+    root.style.setProperty('--app-font-size-base', getSizeString(settings.appFontSize));
+    root.style.setProperty('--notebook-font-size-base', getSizeString(settings.notebookFontSize));
   };
 
   const handleCreateWeek = async (mode = 'next', customDate = null) => {

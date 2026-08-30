@@ -26,8 +26,10 @@ const SettingsView = ({ onSettingsChange }) => {
     await saveSettings(settings);
     if (onSettingsChange) onSettingsChange(settings);
     
-    setSaveStatus('Ayarlar başarıyla kaydedildi!');
-    setTimeout(() => setSaveStatus(''), 3000);
+    setSaveStatus('Ayarlar başarıyla kaydedildi! Sayfa yenileniyor...');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   const fontOptions = [

@@ -158,7 +158,7 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
                              onClick={(e) => { e.stopPropagation(); if(onTaskClick) onTaskClick(task); }}
                              style={{
                                display: 'flex', alignItems: 'center', gap: '4px',
-                               backgroundColor: 'var(--card-bg)', padding: '3px 4px', borderRadius: '4px',
+                               backgroundColor: 'var(--bg-color)', padding: '3px 4px', borderRadius: '4px',
                                opacity: task.completed ? 0.5 : 1
                              }}>
                           <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: c, flexShrink: 0 }} />
@@ -189,7 +189,7 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
       {/* ADD TASK MODAL OVERLAY */}
       {addingTaskForDate && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setAddingTaskForDate(null)}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ backgroundColor: 'var(--bg-color)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{addingTaskForDate} İçin Görev Ekle</span>
               <button onClick={() => setAddingTaskForDate(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20}/></button>
@@ -201,7 +201,7 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}
               onKeyDown={e => { if(e.key === 'Enter') handleTaskSubmit(); }}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginBottom: '16px', fontSize: '1rem', outline: 'none' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--c-gray-bg)', color: 'var(--text-main)', marginBottom: '16px', fontSize: '1rem', outline: 'none' }}
             />
             <button onClick={handleTaskSubmit} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary)', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
               <Check size={20} /> Kaydet
