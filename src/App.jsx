@@ -719,6 +719,19 @@ function App() {
               onNavigateToList={(listId) => setActiveTab(listId)}
             />
           )}
+        
+          {activeTab === 'smart_calendar' && (
+            <div className="task-list-view-container" style={{padding: '1rem', width: '100%', height: '100%', overflowY: 'auto'}}>
+              <CalendarView 
+                tasks={customTasks.filter(t => Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')))} 
+                onAddTask={(dateStr) => {
+                  alert("Tarih seçildi: " + dateStr + ". Takvim ekranından görev ekleme daha sonra aktif edilecek.");
+                }}
+                onTaskClick={(task) => {}}
+              />
+            </div>
+          )}
+
         </main>
       </div>
 
@@ -752,8 +765,8 @@ function App() {
       />
       
       <SettingsModal 
-        isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
+        isOpen={settingsModalOpen || activeTab === 'settings'}
+        onClose={() => { setSettingsModalOpen(false); if (activeTab === 'settings') setActiveTab('smart_myday'); }}
         onSettingsChange={(newSettings) => {
           setAppSettings(newSettings);
           applySettingsToDOM(newSettings);
