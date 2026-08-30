@@ -769,14 +769,7 @@ function App() {
         }}
       />
       
-      <SettingsModal 
-        isOpen={settingsModalOpen || activeTab === 'settings'}
-        onClose={() => { setSettingsModalOpen(false); if (activeTab === 'settings') setActiveTab('smart_myday'); }}
-        onSettingsChange={(newSettings) => {
-          setAppSettings(newSettings);
-          applySettingsToDOM(newSettings);
-        }}
-      />
+      
 
       <ChangeWeekDateModal
         isOpen={changeDateModalOpen}
