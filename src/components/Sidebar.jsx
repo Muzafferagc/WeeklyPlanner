@@ -252,6 +252,17 @@ const Sidebar = ({
           </button>
 
           <button 
+            className={`sidebar-nav-item ${activeTab === 'smart_calendar' ? 'active' : ''}`}
+            onClick={() => handleTabClick('smart_calendar')}
+          >
+            <div className="nav-item-left">
+              <CalendarDays size={18} className="icon-planned" style={{color: '#8b5cf6'}} />
+              <span>Takvim</span>
+            </div>
+          </button>
+
+
+          <button 
             className={`sidebar-nav-item ${activeTab === 'smart_all' ? 'active' : ''}`}
             onClick={() => handleTabClick('smart_all')}
           >
@@ -291,6 +302,17 @@ const Sidebar = ({
               <span>Not Defteri</span>
             </div>
           </button>
+
+          <button 
+            className={`sidebar-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => handleTabClick('settings')}
+          >
+            <div className="nav-item-left">
+              <Settings size={18} className="text-muted" />
+              <span>Ayarlar</span>
+            </div>
+          </button>
+
         </div>
 
       <div className="sidebar-divider" />

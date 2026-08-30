@@ -571,17 +571,127 @@ const TaskListView = ({
         </div>
       </form>
 
+      
       {/* TASKS CONTENT AREA */}
       {viewMode === 'calendar' ? (
         <CalendarView 
           tasks={filteredTasks} 
           onAddTask={(dateStr) => {
             setNewTaskDueDate(dateStr);
-            setViewMode('list'); // Switch to list so they can type the task name
+            setViewMode('list'); 
           }}
           onTaskClick={(task) => handleTaskCardClick(task)}
         />
+      ) : viewMode === 'list' && safeListId === 'smart_planned' ? (
+        <div className="tasks-list-container">
+          {(() => {
+            if (activeTasks.length === 0 && completedTasks.length === 0) {
+              return (
+                <div className="empty-tasks-state">
+                  <CheckSquare size={52} className="empty-icon" />
+                  <h3>Henüz planlanmış bir görev/not yok</h3>
+                  <p>Tarihi olan veya tekrarlanan tüm görevleriniz burada gruplanır.</p>
+                </div>
+              );
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const endOfWeek = new Date(today);
+            endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+            const groups = {
+              'Gecikmiş': [],
+              'Bugün': [],
+              'Yarın': [],
+              'Gelecek 7 Gün': [],
+              'Daha Sonra': [],
+              'Tamamlananlar': completedTasks
+            };
+
+            activeTasks.forEach(t => {
+              if (!t.dueDate) {
+                groups['Daha Sonra'].push(t);
+                return;
+              }
+              const d = new Date(t.dueDate);
+              d.setHours(0,0,0,0);
+              
+              if (d < today) groups['Gecikmiş'].push(t);
+              else if (d.getTime() === today.getTime()) groups['Bugün'].push(t);
+              else if (d.getTime() === tomorrow.getTime()) groups['Yarın'].push(t);
+              else if (d <= endOfWeek) groups['Gelecek 7 Gün'].push(t);
+              else groups['Daha Sonra'].push(t);
+            });
+
+            const renderGroup = (title, tasks, isCompleted = false) => {
+              if (tasks.length === 0) return null;
+              return (
+                <div key={title} style={{marginBottom: '2rem'}}>
+                  <h3 style={{fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem'}}>
+                    {title} ({tasks.length})
+                  </h3>
+                  {tasks.map(task => {
+                    const isSelected = selectedTaskIds.includes(task.id);
+                    return (
+                      <div 
+                        key={task.id} 
+                        className={`task-item-card ${task.completed ? 'completed' : ''} ${selectedTask?.id === task.id ? 'selected' : ''} ${isSelected ? 'bulk-selected' : ''}`}
+                        onClick={(e) => handleTaskCardClick(task, e)}
+                      >
+                        {isSelectMode ? (
+                          <div className={`bulk-checkbox ${isSelected ? 'checked' : ''}`}>
+                            {isSelected ? <CheckCircle2 size={22} className="text-primary" /> : <Circle size={22} className="text-muted" />}
+                          </div>
+                        ) : (
+                          <button 
+                            type="button" 
+                            className="task-complete-btn" 
+                            onClick={(e) => handleToggleComplete(task.id, e)}
+                          >
+                            {task.completed ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+                          </button>
+                        )}
+                        <div className="task-item-content">
+                          <h4 className="task-item-title">{task.title}</h4>
+                          <div className="task-item-badges">
+                            {task.dueDateLabel && (
+                              <span className={`task-badge ${task.completed ? 'completed' : (new Date(task.dueDate) < today ? 'overdue' : 'date')}`}>
+                                <Calendar size={12} />
+                                {task.dueDateLabel}
+                              </span>
+                            )}
+                            {task.repeatType && task.repeatType !== 'none' && (
+                              <span className="task-badge repeat">
+                                <Repeat size={12} />
+                                Tekrarlayan
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            };
+
+            return (
+              <>
+                {renderGroup('Gecikmiş', groups['Gecikmiş'])}
+                {renderGroup('Bugün', groups['Bugün'])}
+                {renderGroup('Yarın', groups['Yarın'])}
+                {renderGroup('Gelecek 7 Gün', groups['Gelecek 7 Gün'])}
+                {renderGroup('Daha Sonra', groups['Daha Sonra'])}
+                {renderGroup('Tamamlananlar', groups['Tamamlananlar'], true)}
+              </>
+            );
+          })()}
+        </div>
       ) : viewMode === 'list' ? (
+
         <div className="tasks-list-container">
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="empty-tasks-state">

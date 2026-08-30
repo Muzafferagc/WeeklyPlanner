@@ -3,6 +3,7 @@ import { Settings, Sun, Moon, Download, Upload, RotateCcw, Printer, FileText, Co
 import WeeklySchedule from './components/WeeklySchedule';
 import CourseDetailsView from './components/CourseDetailsView';
 import NotebookView from './components/NotebookView';
+import CalendarView from './components/CalendarView';
 import Sidebar from './components/Sidebar';
 import TaskListView from './components/TaskListView';
 import SlotDetailModal from './components/SlotDetailModal';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, BookOpen, Sun, CheckSquare, Menu } from 'lucide-react';
+import { Calendar, CalendarDays, Settings, BookOpen, Sun, CheckSquare, Menu } from 'lucide-react';
 
 const MobileNav = ({ activeTab, onTabChange, onToggleSidebarDrawer, customTasks = [] }) => {
   const allCount = customTasks.filter(t => !t.completed).length;
