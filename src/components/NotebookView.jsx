@@ -49,10 +49,14 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   }, [isEraser]);
 
   useEffect(() => {
-    if (activePage && canvasRef.current && activePage.drawingData) {
-      canvasRef.current.loadPaths(activePage.drawingData);
-    } else if (canvasRef.current) {
-      canvasRef.current.clearCanvas();
+    try {
+      if (activePage && canvasRef.current && activePage.drawingData) {
+        canvasRef.current.loadPaths(activePage.drawingData);
+      } else if (canvasRef.current) {
+        canvasRef.current.clearCanvas();
+      }
+    } catch (e) {
+      console.warn("Canvas load warning:", e);
     }
   }, [activePageId]);
 
@@ -116,10 +120,6 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   };
 
   const handleDeletePage = async (id) => {
-    if (pages.length <= 1) {
-      alert("Son sayfayı silemezsiniz!");
-      return;
-    }
     if (window.confirm("Bu sayfayı silmek istediğinize emin misiniz?")) {
       const newPages = pages.filter(p => p.id !== id);
       setPages(newPages);
