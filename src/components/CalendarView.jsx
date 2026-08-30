@@ -71,7 +71,7 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
       if (task.repeatType === 'weekly' && targetDate.getDay() === createdDate.getDay()) return true;
       
       if (task.repeatType === 'custom' && task.repeatDays && task.repeatDays.length > 0) {
-        const dayNamesMap = { 0: 'Pazar', 1: 'Pazartesi', 2: 'Salı', 3: 'Çarşamba', 4: 'Perşembe', 5: 'Cuma', 6: 'Cumartesi' };
+        const dayNamesMap = { 0: 'Pzr', 1: 'Pzt', 2: 'Sal', 3: 'Çrş', 4: 'Prş', 5: 'Cum', 6: 'Cmt' };
         const currentDayName = dayNamesMap[dayOfWeek];
         if (task.repeatDays.includes(currentDayName)) return true;
       }

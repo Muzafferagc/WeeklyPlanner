@@ -738,10 +738,23 @@ function App() {
             <div className="task-list-view-container" style={{padding: '1rem', width: '100%', height: '100%', overflowY: 'auto'}}>
               <CalendarView 
                 tasks={customTasks.filter(t => Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')))} 
-                onAddTask={(dateStr) => {
-                  alert("Tarih seçildi: " + dateStr + ". Takvim ekranından görev ekleme daha sonra aktif edilecek.");
+                onAddTask={(dateStr, title) => {
+                  if (!title || !title.trim()) return;
+                  const newTask = {
+                    id: Date.now().toString(),
+                    title: title.trim(),
+                    completed: false,
+                    dueDate: dateStr,
+                    listId: 'smart_planned',
+                    createdAt: new Date().toISOString()
+                  };
+                  const updatedTasks = [...customTasks, newTask];
+                  setCustomTasks(updatedTasks);
+                  saveCustomTasks(updatedTasks);
                 }}
-                onTaskClick={(task) => {}}
+                onTaskClick={(task) => {
+                  // Optional: could open a modal for task details
+                }}
               />
             </div>
           )}
