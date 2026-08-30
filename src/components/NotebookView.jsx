@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, Plus, ArrowLeft, ArrowRight, Image as ImageIcon, Eraser, PenTool, Type, Cloud, MousePointer2, Trash, ChevronLeft, ChevronRight, Edit2 } from 'lucide-react';
-import { getNotebookData, saveNotebookData, generateId, exportData } from '../utils/storage';
+import { Trash2, Plus, ArrowLeft, ArrowRight, Image as ImageIcon, Eraser, PenTool, Type, Cloud, MousePointer2, Trash, ChevronLeft, ChevronRight, Edit2, Folder, FolderPlus, FilePlus } from 'lucide-react';
+import { getNotebookData, saveNotebookData, getNotebookFolders, saveNotebookFolders, generateId, exportData } from '../utils/storage';
 import { broadcastToCloud, getSyncRoom } from '../utils/syncService';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import Draggable from 'react-draggable';
 
 export default function NotebookView({ refreshTrigger, onDataChange }) {
+
   const [pages, setPages] = useState([]);
+  const [folders, setFolders] = useState([]);
   const [activePageId, setActivePageId] = useState(null);
   const [loading, setLoading] = useState(true);
   
   // Overview state
   const [isOverview, setIsOverview] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('Tümü');
+  const [currentFolderId, setCurrentFolderId] = useState(null);
   
   // Drawing state
   const [drawMode, setDrawMode] = useState(false);
@@ -28,7 +30,9 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
 
   const loadData = async () => {
     const data = await getNotebookData();
+    const folderData = await getNotebookFolders();
     setPages(data);
+    setFolders(folderData);
     if (data.length > 0 && !activePageId) {
       setActivePageId(data[0].id);
     }
@@ -44,7 +48,6 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     }
   }, [isEraser]);
 
-  // When active page changes, load its drawing paths
   useEffect(() => {
     if (activePage && canvasRef.current && activePage.drawingData) {
       canvasRef.current.loadPaths(activePage.drawingData);
@@ -81,8 +84,8 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   const handleAddPage = async () => {
     const newPage = {
       id: generateId(),
-      title: `Sayfa ${pages.length + 1}`,
-      category: selectedCategory === 'Tümü' ? 'Genel' : selectedCategory,
+      title: `Yeni Not ${pages.length + 1}`,
+      folderId: currentFolderId,
       content: '',
       drawingData: null,
       images: [],
@@ -96,6 +99,22 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     if (onDataChange) onDataChange();
   };
 
+  const handleAddFolder = async () => {
+    const folderName = window.prompt("Yeni klasörün adı:");
+    if (!folderName || !folderName.trim()) return;
+    
+    const newFolder = {
+      id: generateId(),
+      name: folderName.trim(),
+      parentId: currentFolderId,
+      createdAt: new Date().toISOString()
+    };
+    const newFolders = [...folders, newFolder];
+    setFolders(newFolders);
+    await saveNotebookFolders(newFolders);
+    if (onDataChange) onDataChange();
+  };
+
   const handleDeletePage = async (id) => {
     if (pages.length <= 1) {
       alert("Son sayfayı silemezsiniz!");
@@ -104,50 +123,94 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     if (window.confirm("Bu sayfayı silmek istediğinize emin misiniz?")) {
       const newPages = pages.filter(p => p.id !== id);
       setPages(newPages);
-      if (activePageId === id) {
-        setActivePageId(newPages[0].id);
+      await saveNotebookData(newPages);
+      if (id === activePageId) {
+        setIsOverview(true);
       }
+      if (onDataChange) onDataChange();
+    }
+  };
+
+  const handleDeleteFolder = async (id) => {
+    if (window.confirm("Bu klasörü ve içindeki tüm verileri silmek istediğinize emin misiniz?")) {
+      // Recursive delete function to find all sub-folders and pages
+      const foldersToDelete = new Set([id]);
+      let added = true;
+      while(added) {
+        added = false;
+        for (const f of folders) {
+          if (foldersToDelete.has(f.parentId) && !foldersToDelete.has(f.id)) {
+            foldersToDelete.add(f.id);
+            added = true;
+          }
+        }
+      }
+      
+      const newFolders = folders.filter(f => !foldersToDelete.has(f.id));
+      const newPages = pages.filter(p => !foldersToDelete.has(p.folderId));
+      
+      setFolders(newFolders);
+      setPages(newPages);
+      await saveNotebookFolders(newFolders);
       await saveNotebookData(newPages);
       if (onDataChange) onDataChange();
     }
   };
-  
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !activePage) return;
-    
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target.result;
-      const newImage = { id: generateId(), url: base64, x: 50, y: 50 }; // Default spawn coordinates
-      const newPages = pages.map(p => p.id === activePageId ? { ...p, images: [...(p.images || []), newImage] } : p);
-      setPages(newPages);
-      await saveNotebookData(newPages);
+
+  const handleRenameFolder = async (id, oldName) => {
+    const newName = window.prompt("Klasörün yeni adı:", oldName);
+    if (newName && newName.trim() && newName.trim() !== oldName) {
+      const newFolders = folders.map(f => f.id === id ? { ...f, name: newName.trim() } : f);
+      setFolders(newFolders);
+      await saveNotebookFolders(newFolders);
       if (onDataChange) onDataChange();
-    };
-    reader.readAsDataURL(file);
+    }
   };
-  
-  const handleUpdateImagePosition = async (imgId, data) => {
-    if (!activePage) return;
+
+  const handleAddImage = (e) => {
+    if (!activePageId) return;
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const newImage = {
+          id: generateId(),
+          dataUrl: event.target.result,
+          x: 50,
+          y: 50,
+          width: 200
+        };
+        const newPages = pages.map(p => {
+          if (p.id === activePageId) {
+            return { ...p, images: [...(p.images || []), newImage] };
+          }
+          return p;
+        });
+        setPages(newPages);
+        await saveNotebookData(newPages);
+        if (onDataChange) onDataChange();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const updateImagePosition = async (pageId, imageId, newX, newY) => {
     const newPages = pages.map(p => {
-      if (p.id === activePageId) {
-        const updatedImages = (p.images || []).map(img => 
-          img.id === imgId ? { ...img, x: data.x, y: data.y } : img
-        );
-        return { ...p, images: updatedImages };
+      if (p.id === pageId) {
+        const newImages = p.images.map(img => img.id === imageId ? { ...img, x: newX, y: newY } : img);
+        return { ...p, images: newImages };
       }
       return p;
     });
     setPages(newPages);
     await saveNotebookData(newPages);
+    if (onDataChange) onDataChange();
   };
 
-  const handleDeleteImage = async (imgId) => {
-    if (!activePage) return;
+  const deleteImage = async (pageId, imageId) => {
     const newPages = pages.map(p => {
-      if (p.id === activePageId) {
-        return { ...p, images: (p.images || []).filter(img => img.id !== imgId) };
+      if (p.id === pageId) {
+        return { ...p, images: p.images.filter(img => img.id !== imageId) };
       }
       return p;
     });
@@ -158,7 +221,6 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
 
   const handleManualSave = async () => {
     try {
-      // Need to make sure notebook pages are saved locally before exporting
       await saveNotebookData(pages);
       const fullState = JSON.parse(await exportData(null, null));
       await broadcastToCloud(getSyncRoom(), fullState);
@@ -189,86 +251,101 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     }
   };
 
-
-  const handleDragStart = (e, id) => {
-    e.dataTransfer.setData('text/plain', id);
+  const handleDragStart = (e, type, id) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));
   };
   
-  const handleDrop = async (e, targetId) => {
+  const handleDrop = async (e, targetFolderId) => {
     e.preventDefault();
-    const draggedId = e.dataTransfer.getData('text/plain');
-    if (!draggedId || draggedId === targetId) return;
+    e.currentTarget.style.backgroundColor = '';
     
-    const newPages = [...pages];
-    const draggedIndex = newPages.findIndex(p => p.id === draggedId);
-    const targetIndex = newPages.findIndex(p => p.id === targetId);
-    
-    const [draggedItem] = newPages.splice(draggedIndex, 1);
-    newPages.splice(targetIndex, 0, draggedItem);
-    
-    setPages(newPages);
-    await saveNotebookData(newPages);
-    if (onDataChange) onDataChange();
+    try {
+      const dataStr = e.dataTransfer.getData('application/json');
+      if (!dataStr) return;
+      const { type, id } = JSON.parse(dataStr);
+      
+      if (type === 'page') {
+        const newPages = pages.map(p => p.id === id ? { ...p, folderId: targetFolderId } : p);
+        setPages(newPages);
+        await saveNotebookData(newPages);
+        if (onDataChange) onDataChange();
+      } else if (type === 'folder' && id !== targetFolderId) {
+        // Prevent moving a folder into its own descendant
+        let isDescendant = false;
+        let curr = folders.find(f => f.id === targetFolderId);
+        while (curr) {
+          if (curr.id === id) {
+            isDescendant = true;
+            break;
+          }
+          curr = folders.find(f => f.id === curr.parentId);
+        }
+        
+        if (!isDescendant) {
+          const newFolders = folders.map(f => f.id === id ? { ...f, parentId: targetFolderId } : f);
+          setFolders(newFolders);
+          await saveNotebookFolders(newFolders);
+          if (onDataChange) onDataChange();
+        }
+      }
+    } catch(err) {}
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
   };
-
-  const categories = ['Tümü', ...new Set(pages.map(p => p.category || 'Genel'))];
-  const filteredPages = selectedCategory === 'Tümü' ? pages : pages.filter(p => (p.category || 'Genel') === selectedCategory);
   
-  const changeActivePageCategory = async (newCategory) => {
-    if (!activePageId) return;
-    const newPages = pages.map(p => p.id === activePageId ? { ...p, category: newCategory } : p);
-    setPages(newPages);
-    await saveNotebookData(newPages);
-    if (onDataChange) onDataChange();
+  const handleDragLeave = (e) => {
+    e.currentTarget.style.backgroundColor = '';
   };
 
-  const handleRenameCategory = async (oldName) => {
-    if (oldName === 'Tümü') return;
-    const newName = window.prompt(`'${oldName}' kategorisinin yeni adı ne olsun?`, oldName);
-    if (newName && newName.trim() && newName.trim() !== oldName) {
-      const trimmed = newName.trim();
-      const newPages = pages.map(p => (p.category || 'Genel') === oldName ? { ...p, category: trimmed } : p);
-      setPages(newPages);
-      if (selectedCategory === oldName) setSelectedCategory(trimmed);
-      await saveNotebookData(newPages);
-      if (onDataChange) onDataChange();
+  const getBreadcrumbs = () => {
+    const crumbs = [];
+    let curr = folders.find(f => f.id === currentFolderId);
+    while (curr) {
+      crumbs.unshift(curr);
+      curr = folders.find(f => f.id === curr.parentId);
     }
+    return crumbs;
   };
+  
+  const breadcrumbs = getBreadcrumbs();
+  const currentFolders = folders.filter(f => f.parentId === currentFolderId);
+  const currentPages = pages.filter(p => p.folderId === currentFolderId);
 
   const getCategoryColor = (categoryName) => {
-    if (categoryName === 'Tümü') return '#3b82f6';
-    if (categoryName === 'Genel') return '#8b5cf6';
-    
     let hash = 0;
     for (let i = 0; i < categoryName.length; i++) {
       hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
     const h = Math.abs(hash) % 360;
     return `hsl(${h}, 75%, 55%)`;
   };
 
   if (loading) return <div className="loading-screen">Defter Yükleniyor...</div>;
 
-
   return (
     <div className="notebook-layout" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       
       {isOverview ? (
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1, backgroundColor: '#f8fafc' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
             <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.5px' }}>Defterlerim</h2>
             <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="btn-primary" 
+                onClick={handleAddFolder}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px', padding: '10px 16px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s', backgroundColor: '#e2e8f0', color: '#475569', border: '1px solid #cbd5e1' }}
+              >
+                <FolderPlus size={18} /> Yeni Klasör
+              </button>
               <button 
                 className="btn-primary" 
                 onClick={handleAddPage}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px', padding: '10px 16px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s' }}
               >
-                <Plus size={18} /> Yeni Defter
+                <FilePlus size={18} /> Yeni Defter
               </button>
               <button 
                 className="btn-secondary"
@@ -281,73 +358,103 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', overflowX: 'auto', paddingBottom: '12px', alignItems: 'center' }}>
-            {categories.map(cat => {
-              const isSelected = selectedCategory === cat;
-              const catColor = getCategoryColor(cat);
-              return (
-                <div key={cat} style={{ display: 'flex', alignItems: 'center', backgroundColor: isSelected ? catColor : '#fff', borderRadius: '24px', padding: '4px 6px 4px 16px', border: `1px solid ${isSelected ? catColor : '#e2e8f0'}`, boxShadow: isSelected ? `0 4px 12px ${catColor}40` : '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }}>
-                  <span
-                    onClick={() => setSelectedCategory(cat)}
-                    style={{
-                      color: isSelected ? '#fff' : '#475569',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      whiteSpace: 'nowrap',
-                      marginRight: cat !== 'Tümü' && isSelected ? '8px' : '8px'
-                    }}
-                  >
-                    {cat}
-                  </span>
-                  {cat !== 'Tümü' && isSelected && (
-                    <button
-                      onClick={() => handleRenameCategory(cat)}
-                      title="Kategoriyi Düzenle"
-                      style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-            <button
-              onClick={async () => {
-                const newCat = window.prompt("Yeni kategori adı:");
-                if (newCat && newCat.trim()) {
-                  setSelectedCategory(newCat.trim());
-                }
-              }}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '24px',
-                border: '2px dashed #cbd5e1',
-                backgroundColor: 'transparent',
-                color: '#64748b',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s',
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#64748b'; }}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px', backgroundColor: '#fff', padding: '12px 20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+            <span 
+              onClick={() => setCurrentFolderId(null)} 
+              style={{ cursor: 'pointer', fontWeight: currentFolderId === null ? 'bold' : 'normal', color: currentFolderId === null ? 'var(--primary)' : '#64748b' }}
             >
-              + Yeni Klasör
-            </button>
+              Ana Dizin
+            </span>
+            {breadcrumbs.map((crumb, idx) => (
+              <React.Fragment key={crumb.id}>
+                <span style={{ color: '#cbd5e1' }}>/</span>
+                <span 
+                  onClick={() => setCurrentFolderId(crumb.id)} 
+                  style={{ cursor: 'pointer', fontWeight: idx === breadcrumbs.length - 1 ? 'bold' : 'normal', color: idx === breadcrumbs.length - 1 ? 'var(--primary)' : '#64748b' }}
+                >
+                  {crumb.name}
+                </span>
+              </React.Fragment>
+            ))}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
-            {filteredPages.map(page => {
-              const pageCatColor = getCategoryColor(page.category || 'Genel');
+            {/* Folders */}
+            {currentFolderId !== null && (
+              <div 
+                onDrop={(e) => handleDrop(e, breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2].id : null)}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onClick={() => setCurrentFolderId(breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2].id : null)}
+                style={{
+                  backgroundColor: '#f1f5f9',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  padding: '24px',
+                  border: '2px dashed #cbd5e1',
+                  color: '#64748b',
+                  transition: 'all 0.2s',
+                  minHeight: '180px'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e2e8f0'; }}
+                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; }}
+              >
+                <ArrowLeft size={24} />
+                <span style={{ fontWeight: 'bold' }}>Geri Dön</span>
+              </div>
+            )}
+            
+            {currentFolders.map(folder => {
+              const folderColor = getCategoryColor(folder.name);
+              return (
+                <div 
+                  key={folder.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+                  onDrop={(e) => handleDrop(e, folder.id)}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => setCurrentFolderId(folder.id)}
+                  style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    border: '1px solid #e2e8f0',
+                    padding: '20px',
+                    position: 'relative'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.08)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <Folder size={40} color={folderColor} fill={`${folderColor}30`} />
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={(e) => { e.stopPropagation(); handleRenameFolder(folder.id, folder.name); }} style={{ background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer' }}><Edit2 size={16}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }} style={{ background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer' }}><Trash2 size={16}/></button>
+                    </div>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1e293b' }}>{folder.name}</h3>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>Klasör</span>
+                </div>
+              );
+            })}
+
+            {/* Pages */}
+            {currentPages.map(page => {
+              const pageCatColor = currentFolderId ? getCategoryColor(breadcrumbs[breadcrumbs.length-1].name) : getCategoryColor('Genel');
               return (
                 <div 
                   key={page.id}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, page.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, page.id)}
+                  onDragStart={(e) => handleDragStart(e, 'page', page.id)}
                   onClick={() => {
                     setActivePageId(page.id);
                     setIsOverview(false);
@@ -361,7 +468,8 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
                     transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    border: '1px solid #e2e8f0'
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
@@ -375,10 +483,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                   <div style={{ height: '8px', width: '100%', backgroundColor: pageCatColor }} />
                   
                   <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '11px', backgroundColor: `${pageCatColor}15`, color: pageCatColor, padding: '4px 10px', borderRadius: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {page.category || 'Genel'}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
                         style={{ background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '4px', transition: 'color 0.2s' }}
@@ -412,13 +517,13 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                 </div>
               );
             })}
-            {filteredPages.length === 0 && (
+            {currentFolders.length === 0 && currentPages.length === 0 && currentFolderId !== null && (
               <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', backgroundColor: '#fff', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
                 <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', color: '#94a3b8' }}>
-                  <MousePointer2 size={24} />
+                  <Folder size={24} />
                 </div>
-                <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '18px' }}>Bu klasör henüz boş</h3>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '14px', textAlign: 'center' }}>Hemen sağ üstten "Yeni Defter" oluşturarak not almaya başlayabilirsin.</p>
+                <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '18px' }}>Bu klasör boş</h3>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '14px', textAlign: 'center' }}>Hemen "Yeni Klasör" veya "Yeni Defter" oluşturabilirsiniz.</p>
               </div>
             )}
           </div>
@@ -434,7 +539,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
               onClick={() => setIsOverview(true)}
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
             >
-              <ArrowLeft size={18} /> Tüm Sayfalar
+              <ArrowLeft size={18} /> Geri Dön
             </button>
             <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 8px' }} />
             <input 
@@ -446,17 +551,24 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
             />
             
             <select
-              value={activePage.category || 'Genel'}
-              onChange={e => changeActivePageCategory(e.target.value)}
-              style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '13px' }}
+              value={activePage.folderId || ''}
+              onChange={async e => {
+                const newFolderId = e.target.value === '' ? null : e.target.value;
+                const newPages = pages.map(p => p.id === activePageId ? { ...p, folderId: newFolderId } : p);
+                setPages(newPages);
+                await saveNotebookData(newPages);
+                if (onDataChange) onDataChange();
+              }}
+              style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '13px', maxWidth: '150px' }}
             >
-              {categories.filter(c => c !== 'Tümü').map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              <option value="">Ana Dizin</option>
+              {folders.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
               ))}
-              <option value="_new">+ Yeni Kategori</option>
             </select>
             
             <div className="toolbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+
               <button 
                 className="delete-btn-hover"
                 style={{ background: 'var(--primary)', border: 'none', color: '#fff', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}

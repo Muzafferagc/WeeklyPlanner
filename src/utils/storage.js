@@ -502,6 +502,7 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
   const customLists = await getCustomLists();
   const customTasks = await getCustomTasks();
   const notebookPages = await getNotebookData();
+  const notebookFolders = await getNotebookFolders();
 
   const data = {
     exportedAt: new Date().toISOString(),
@@ -512,7 +513,8 @@ export const exportData = async (weekIds = null, activeWeekId = null) => {
     courseDetailsData,
     customLists,
     customTasks,
-    notebookPages
+    notebookPages,
+    notebookFolders
   };
 
   for (let w of weeks) {
@@ -558,6 +560,10 @@ export const importData = async (jsonData) => {
     if (data.notebookPages && Array.isArray(data.notebookPages)) {
       await localforage.setItem('notebook_pages', data.notebookPages);
     }
+    
+    if (data.notebookFolders && Array.isArray(data.notebookFolders)) {
+      await localforage.setItem('notebook_folders', data.notebookFolders);
+    }
 
     for (const weekId of Object.keys(data.schedules)) {
       if (data.schedules[weekId]) {
@@ -598,12 +604,61 @@ export const resetAllData = async () => {
   return defaultWeeks;
 };
 
+export const getNotebookFolders = async () => {
+  try {
+    const data = await localforage.getItem('notebook_folders');
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching notebook folders:', error);
+    return [];
+  }
+};
+
+export const saveNotebookFolders = async (data) => {
+  try {
+    await localforage.setItem('notebook_folders', data);
+  } catch (error) {
+    console.error('Error saving notebook folders:', error);
+  }
+};
+
 export const getNotebookData = async () => {
   try {
     const data = await localforage.getItem('notebook_pages');
+    
     if (data && Array.isArray(data)) {
-      // Backfill category for existing pages
-      return data.map(p => ({ ...p, category: p.category || 'Genel' }));
+      // MIGRATION: Convert string categories to real folders
+      const existingFolders = await getNotebookFolders();
+      let migrated = false;
+      const updatedPages = [...data];
+      
+      for (const page of updatedPages) {
+        if (page.category !== undefined) {
+          const categoryName = page.category || 'Genel';
+          let folder = existingFolders.find(f => f.name === categoryName && f.parentId === null);
+          
+          if (!folder) {
+            folder = {
+              id: generateId(),
+              name: categoryName,
+              parentId: null,
+              createdAt: new Date().toISOString()
+            };
+            existingFolders.push(folder);
+          }
+          
+          page.folderId = folder.id;
+          delete page.category;
+          migrated = true;
+        }
+      }
+      
+      if (migrated) {
+        await saveNotebookFolders(existingFolders);
+        await saveNotebookData(updatedPages);
+      }
+      
+      return updatedPages;
     }
     
     // Default initial data
