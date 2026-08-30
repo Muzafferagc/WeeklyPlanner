@@ -4997,6 +4997,10 @@ body, button, input, textarea, select {
   font-family: var(--app-font-family, 'Inter'), system-ui, sans-serif !important;
 }
 
+body {
+  font-size: var(--app-font-size-base, 16px);
+}
+
 .notebook-content textarea, .notebook-content input {
   font-family: var(--notebook-font-family, 'Inter'), system-ui, sans-serif !important;
   font-size: var(--notebook-font-size-base, 16px) !important;
