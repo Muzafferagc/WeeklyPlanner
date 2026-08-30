@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, LayoutList } from 'lucide-react';
 
 const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -20,7 +20,7 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
   const nextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
 
   const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-  const dayNames = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const dayNames = ["P", "S", "Ç", "P", "C", "C", "P"]; // Apple style single letters
 
   const calendarGrid = useMemo(() => {
     let grid = [];
@@ -41,9 +41,7 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
     const dateStr = `${currentYear}-${pad(currentMonth + 1)}-${pad(dayNum)}`;
     
     return tasks.filter(t => {
-      // Direct exact match
       if (t.dueDate === dateStr) return true;
-      // Match localized string label as fallback
       if (t.dueDateLabel && t.dueDateLabel.startsWith(dayNum.toString() + ' ' + monthNames[currentMonth])) return true;
       return false;
     });
@@ -58,35 +56,50 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
     }
   };
 
+  const colors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+  const getTaskColor = (id) => {
+    // Generate deterministic color based on task ID
+    let sum = 0;
+    for(let i=0; i<id.length; i++) sum += id.charCodeAt(i);
+    return colors[sum % colors.length];
+  };
+
   return (
-    <div className="calendar-view" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', height: '100%', overflow: 'hidden' }}>
+    <div className="apple-calendar-container" style={{ 
+      backgroundColor: '#000000', 
+      color: '#ffffff', 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' 
+    }}>
       
-      <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: '600' }}>
-          {monthNames[currentMonth]} {currentYear}
-        </h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={prevMonth} style={{ padding: '8px', background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-main)' }}>
-            <ChevronLeft size={20} />
-          </button>
-          <button onClick={() => setCurrentDate(new Date())} style={{ padding: '8px 16px', background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-main)', fontWeight: '500' }}>
-            Bugün
-          </button>
-          <button onClick={nextMonth} style={{ padding: '8px', background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-main)' }}>
-            <ChevronRight size={20} />
-          </button>
+      {/* HEADER */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', backgroundColor: '#000000' }}>
+        <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '1.2rem', display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 0 }}>
+          <ChevronLeft size={24} /> <span style={{ marginLeft: '4px' }}>{currentYear}</span>
+        </button>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', padding: 0 }}><LayoutList size={22} /></button>
+          <button style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', padding: 0 }} onClick={nextMonth}><ChevronRight size={24} /></button>
         </div>
       </div>
 
-      <div className="calendar-days-header" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: 'var(--bg-panel)', borderBottom: '1px solid var(--border-color)' }}>
-        {dayNames.map(d => (
-          <div key={d} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+      <div style={{ padding: '0 20px' }}>
+        <h1 style={{ fontSize: '2.2rem', fontWeight: 'bold', margin: '10px 0 20px 0' }}>{monthNames[currentMonth]}</h1>
+      </div>
+
+      {/* DAYS ROW */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+        {dayNames.map((d, i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: '#8e8e93' }}>
             {d}
           </div>
         ))}
       </div>
 
-      <div className="calendar-grid-content" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(100px, 1fr)', overflowY: 'auto', backgroundColor: 'var(--border-color)', gap: '1px' }}>
+      {/* CALENDAR GRID */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(100px, 1fr)', overflowY: 'auto' }}>
         {calendarGrid.map((dayNum, index) => {
           const dayTasks = getTasksForDate(dayNum);
           const isToday = dayNum && new Date().getDate() === dayNum && new Date().getMonth() === currentMonth && new Date().getFullYear() === currentYear;
@@ -94,61 +107,57 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
           return (
             <div 
               key={index} 
-              className={`calendar-cell ${isToday ? 'today' : ''}`}
               onClick={() => handleDayClick(dayNum)}
               style={{ 
-                backgroundColor: 'var(--bg-main)', 
-                padding: '8px', 
-                display: 'flex', 
-                flexDirection: 'column', 
+                borderBottom: '1px solid #1c1c1e', 
+                borderRight: (index + 1) % 7 !== 0 ? '1px solid #1c1c1e' : 'none',
+                padding: '8px 4px',
                 cursor: dayNum ? 'pointer' : 'default',
-                position: 'relative'
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
               }}
             >
               {dayNum && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      width: '28px', 
-                      height: '28px', 
-                      borderRadius: '50%', 
-                      fontSize: '14px', 
-                      fontWeight: isToday ? 'bold' : 'normal',
-                      backgroundColor: isToday ? 'var(--primary)' : 'transparent',
-                      color: isToday ? '#fff' : 'var(--text-main)'
-                    }}>
-                      {dayNum}
-                    </span>
+                  {/* DATE NUMBER */}
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    backgroundColor: isToday ? '#ff3b30' : 'transparent',
+                    color: isToday ? '#fff' : '#fff',
+                    fontWeight: isToday ? 'bold' : '500',
+                    fontSize: '1.2rem',
+                    marginBottom: '8px'
+                  }}>
+                    {dayNum}
                   </div>
-                  
-                  <div className="calendar-tasks" style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
-                    {dayTasks.slice(0, 4).map(task => (
-                      <div 
-                        key={task.id} 
-                        onClick={(e) => { e.stopPropagation(); if(onTaskClick) onTaskClick(task); }}
-                        style={{ 
-                          fontSize: '11px', 
-                          padding: '4px 6px', 
-                          backgroundColor: task.completed ? 'var(--bg-panel)' : 'rgba(var(--primary-rgb), 0.15)', 
-                          color: task.completed ? 'var(--text-secondary)' : 'var(--primary)', 
-                          borderRadius: '4px',
-                          textDecoration: task.completed ? 'line-through' : 'none',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}
-                        title={task.title}
-                      >
-                        {task.title}
-                      </div>
-                    ))}
-                    {dayTasks.length > 4 && (
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', padding: '2px 4px' }}>
-                        +{dayTasks.length - 4} daha...
-                      </div>
+
+                  {/* TASKS LIST INSIDE CELL (Apple Style) */}
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {dayTasks.slice(0, 3).map(task => {
+                      const c = getTaskColor(task.id);
+                      return (
+                        <div key={task.id} 
+                             onClick={(e) => { e.stopPropagation(); if(onTaskClick) onTaskClick(task); }}
+                             style={{
+                               display: 'flex', alignItems: 'center', gap: '4px',
+                               backgroundColor: '#1c1c1e', padding: '3px 4px', borderRadius: '4px',
+                               opacity: task.completed ? 0.5 : 1
+                             }}>
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: c, flexShrink: 0 }} />
+                          <span style={{ fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#d1d1d6' }}>
+                            {task.title}
+                          </span>
+                        </div>
+                      )
+                    })}
+                    {dayTasks.length > 3 && (
+                      <div style={{ fontSize: '0.65rem', color: '#8e8e93', textAlign: 'center' }}>+{dayTasks.length - 3} daha</div>
                     )}
                   </div>
                 </>
@@ -156,6 +165,17 @@ const CalendarView = ({ tasks, onAddTask, onTaskClick }) => {
             </div>
           );
         })}
+      </div>
+
+      {/* BOTTOM ACTION BAR (Native iOS feel) */}
+      <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #333' }}>
+        <button onClick={() => setCurrentDate(new Date())} style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '1.1rem', cursor: 'pointer' }}>
+          Bugün
+        </button>
+        <button style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <LayoutList size={20} />
+          Gelen Kutusu
+        </button>
       </div>
 
     </div>

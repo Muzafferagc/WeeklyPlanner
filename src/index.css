@@ -4989,3 +4989,19 @@ body.drawer-open-lock {
   height: 100% !important;
   overflow: hidden !important;
 }
+
+
+
+/* GLOBAL OVERRIDES FROM SETTINGS */
+body, button, input, textarea, select {
+  font-family: var(--app-font-family, 'Inter'), system-ui, sans-serif !important;
+}
+
+.notebook-content textarea, .notebook-content input {
+  font-family: var(--notebook-font-family, 'Inter'), system-ui, sans-serif !important;
+  font-size: var(--notebook-font-size-base, 16px) !important;
+}
+
+.settings-view-container {
+  font-family: var(--app-font-family, 'Inter'), system-ui, sans-serif !important;
+}

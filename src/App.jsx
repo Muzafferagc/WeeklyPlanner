@@ -13,7 +13,7 @@ import DialogModal from './components/DialogModal';
 import CopyWeekModal from './components/CopyWeekModal';
 import ChangeWeekDateModal from './components/ChangeWeekDateModal';
 import SyncModal from './components/SyncModal';
-import SettingsModal from './components/SettingsModal';
+import SettingsView from './components/SettingsView';
 import MobileNav from './components/MobileNav';
 import PwaBanner from './components/PwaBanner';
 import CreateWeekModal from './components/CreateWeekModal';
@@ -730,6 +730,11 @@ function App() {
                 onTaskClick={(task) => {}}
               />
             </div>
+          )}
+
+        
+          {activeTab === 'settings' && (
+            <SettingsView onSettingsChange={applySettingsToDOM} />
           )}
 
         </main>
