@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Trash2, Plus, ArrowLeft, ArrowRight, Image as ImageIcon, Eraser, PenTool, Type, Cloud, MousePointer2, Trash, ChevronLeft, ChevronRight, Edit2, Folder, FolderPlus, FilePlus } from 'lucide-react';
-import { getNotebookData, saveNotebookData, getNotebookFolders, saveNotebookFolders, generateId, exportData } from '../utils/storage';
+import { getNotebookData, saveNotebookData, getNotebookFolders, saveNotebookFolders, generateId, exportData, getSettings } from '../utils/storage';
 import { broadcastToCloud, getSyncRoom } from '../utils/syncService';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import Draggable from 'react-draggable';
@@ -11,6 +11,7 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   const [folders, setFolders] = useState([]);
   const [activePageId, setActivePageId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState(null);
   
   // Overview state
   const [isOverview, setIsOverview] = useState(true);
@@ -31,8 +32,12 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
   const loadData = async () => {
     const data = await getNotebookData();
     const folderData = await getNotebookFolders();
+    const appSettings = await getSettings();
     setPages(data);
     setFolders(folderData);
+    if(appSettings) {
+      setSettings(appSettings);
+    }
     if (data.length > 0 && !activePageId) {
       setActivePageId(data[0].id);
     }
@@ -319,7 +324,20 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
     return `hsl(${h}, 75%, 55%)`;
   };
 
-  if (loading) return <div className="loading-screen">Defter Yükleniyor...</div>;
+  // Calculate font styles
+  let notebookFontName = 'Inter, system-ui, sans-serif';
+  let notebookFontSizeVal = '15px';
+  if (settings) {
+    if (settings.notebookFontFamily === 'Roboto') notebookFontName = 'Roboto, sans-serif';
+    if (settings.notebookFontFamily === 'Outfit') notebookFontName = 'Outfit, sans-serif';
+    if (settings.notebookFontFamily === 'Comic Sans MS') notebookFontName = '"Comic Sans MS", cursive';
+    if (settings.notebookFontFamily === 'Times New Roman') notebookFontName = '"Times New Roman", serif';
+
+    if (settings.notebookFontSize === 'small') notebookFontSizeVal = '13px';
+    if (settings.notebookFontSize === 'large') notebookFontSizeVal = '18px';
+  }
+
+  if (loading) return <div className="loading-screen" style={{ color: 'var(--text-secondary)' }}>Notlar yükleniyor...</div>;
 
   return (
     <div className="notebook-layout" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
@@ -542,7 +560,8 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
               type="text" 
               value={activePage.title}
               onChange={e => handleSavePageTitle(activePage.id, e.target.value)}
-              style={{ fontSize: '18px', fontWeight: 'bold', border: 'none', outline: 'none', background: 'transparent', minWidth: '120px', flex: '1 1 auto' }}
+              className="page-title-input"
+              style={{ flex: 1, fontFamily: notebookFontName, fontSize: '18px', fontWeight: 'bold', border: 'none', outline: 'none', background: 'transparent', minWidth: '120px' }}
               placeholder="Sayfa Başlığı"
             />
             
@@ -580,14 +599,6 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
                   handleDeletePage(activePage.id);
                   setIsOverview(true);
                 }}
-                title="Sayfayı Sil"
-              >
-                <Trash2 size={18}/>
-              </button>
-              <button 
-                className="delete-btn-hover"
-                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '6px' }}
-                onClick={() => handleDeletePage(activePage.id)}
                 title="Sayfayı Sil"
               >
                 <Trash2 size={18}/>
@@ -657,18 +668,17 @@ export default function NotebookView({ refreshTrigger, onDataChange }) {
               </div>
 
               {/* TEXT AREA */}
-              <textarea
+              <textarea 
                 value={activePage.content || ''}
                 onChange={e => handleSavePageContent(activePage.id, e.target.value)}
+                placeholder="Notlarınızı buraya yazın..."
                 style={{ 
                   gridArea: '1/1',
                   position: 'relative', zIndex: 2, width: '100%', minHeight: '100%', 
                   background: 'transparent', border: 'none', resize: 'vertical', outline: 'none',
-                  padding: '32px 16px 150px 16px', fontSize: '16px', lineHeight: '32px', color: 'var(--text-main)',
-                  fontFamily: 'inherit',
+                  padding: '32px 16px 150px 16px', fontFamily: notebookFontName, fontSize: notebookFontSizeVal, lineHeight: '1.6', color: 'var(--text-main)',
                   pointerEvents: drawMode ? 'none' : 'auto'
                 }}
-                placeholder="Notlarınızı buraya yazın..."
               />
 
               {/* DRAWING CANVAS (OVERLAY) */}

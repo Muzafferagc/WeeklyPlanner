@@ -686,3 +686,19 @@ export const saveNotebookData = async (data) => {
     console.error('Error saving notebook data:', error);
   }
 };
+
+
+export const getSettings = async () => {
+  try {
+    const saved = await localforage.getItem('app_settings');
+    return saved || null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const saveSettings = async (settings) => {
+  try {
+    await localforage.setItem('app_settings', settings);
+  } catch (e) {}
+};

@@ -28,6 +28,7 @@ const ICON_MAP = {
 };
 
 const Sidebar = ({ 
+  onOpenSettings,
   weeks, 
   currentWeekId, 
   onSelectWeek, 
@@ -474,6 +475,13 @@ const Sidebar = ({
               title="Aktif haftanızı Varsayılan Plan Şablonunuza döndürün"
             >
               <RotateCcw size={16} /> Mevcut Haftayı Sıfırla
+            </button>
+            <button 
+              className="new-week-btn" 
+              onClick={() => { if (onCloseMobileDrawer) onCloseMobileDrawer(); if (onOpenSettings) onOpenSettings(); }}
+              style={{ marginTop: '0.5rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}
+            >
+              <Settings size={16} /> Ayarlar
             </button>
           </div>
         )}

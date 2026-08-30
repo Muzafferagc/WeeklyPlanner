@@ -12,6 +12,7 @@ import DialogModal from './components/DialogModal';
 import CopyWeekModal from './components/CopyWeekModal';
 import ChangeWeekDateModal from './components/ChangeWeekDateModal';
 import SyncModal from './components/SyncModal';
+import SettingsModal from './components/SettingsModal';
 import MobileNav from './components/MobileNav';
 import PwaBanner from './components/PwaBanner';
 import CreateWeekModal from './components/CreateWeekModal';
@@ -32,7 +33,9 @@ import {
   getCustomTasks,
   generateId,
   resetDefaultScheduleTemplateToFactory,
-  saveDefaultScheduleTemplate
+  saveDefaultScheduleTemplate,
+  deleteCustomTask,
+  getSettings
 } from './utils/storage';
 import { getSyncRoom, subscribeToCloudSync, broadcastToCloud } from './utils/syncService';
 import confetti from 'canvas-confetti';
@@ -57,6 +60,8 @@ function App() {
   const [changeDateModalOpen, setChangeDateModalOpen] = useState(false);
   const [createWeekModalOpen, setCreateWeekModalOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [appSettings, setAppSettings] = useState(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [progress, setProgress] = useState({ total: 0, completed: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, payload: null });
@@ -149,6 +154,13 @@ function App() {
     const loadedTasks = await getCustomTasks();
     setCustomTasks(loadedTasks);
     
+    // Load Settings
+    const settings = await getSettings();
+    if(settings) {
+        setAppSettings(settings);
+        applySettingsToDOM(settings);
+    }
+
     // Date Backup Restore: Check if backup restored a saved active week date
     const savedActiveWeekId = localStorage.getItem('savedActiveWeekId');
     if (savedActiveWeekId && loadedWeeks.some(w => w.id === savedActiveWeekId)) {
@@ -180,6 +192,24 @@ function App() {
         }
       }
     } catch (e) {}
+  };
+
+  const applySettingsToDOM = (settings) => {
+    const root = document.documentElement;
+    
+    // Apply Font Family
+    let fontName = 'Inter, system-ui, sans-serif';
+    if (settings.appFontFamily === 'Roboto') fontName = 'Roboto, sans-serif';
+    if (settings.appFontFamily === 'Outfit') fontName = 'Outfit, sans-serif';
+    if (settings.appFontFamily === 'Comic Sans MS') fontName = '"Comic Sans MS", cursive';
+    if (settings.appFontFamily === 'Times New Roman') fontName = '"Times New Roman", serif';
+    root.style.setProperty('--app-font-family', fontName);
+
+    // Apply Font Size
+    let baseSize = '14px';
+    if (settings.appFontSize === 'small') baseSize = '12px';
+    if (settings.appFontSize === 'large') baseSize = '16px';
+    root.style.setProperty('--app-font-size-base', baseSize);
   };
 
   const handleCreateWeek = async (mode = 'next', customDate = null) => {
@@ -480,7 +510,7 @@ function App() {
   return (
     <div className="app-layout">
       <PwaBanner />
-      <Sidebar 
+      <Sidebar onOpenSettings={() => setSettingsModalOpen(true)} 
         weeks={weeks}
         currentWeekId={currentWeekId}
         onSelectWeek={setCurrentWeekId}
@@ -489,7 +519,7 @@ function App() {
         onRenameWeek={handleRenameWeek}
         onMultiDeleteWeeks={handleMultiDeleteWeeks}
         onMultiExportWeeks={handleExport}
-        onOpenDefaultPlanModal={() => setDefaultPlanModalOpen(true)}
+        onOpenDefaultPlanModal={() => {}}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         customLists={customLists}
@@ -719,7 +749,15 @@ function App() {
           window.location.reload();
         }}
       />
-
+      
+      <SettingsModal 
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        onSettingsChange={(newSettings) => {
+          setAppSettings(newSettings);
+          applySettingsToDOM(newSettings);
+        }}
+      />
 
       <ChangeWeekDateModal
         isOpen={changeDateModalOpen}
@@ -748,7 +786,7 @@ function App() {
 
 
 
-      <MobileNav 
+      <MobileNav onOpenSettings={() => setSettingsModalOpen(true)} 
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onToggleSidebarDrawer={() => setIsMobileDrawerOpen(prev => !prev)}

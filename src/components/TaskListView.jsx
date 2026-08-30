@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { 
   CheckCircle2, Circle, Star, Calendar, Sun, Plus, Trash2, Edit3, 
   MoreHorizontal, ListFilter, ArrowUpDown, Share2, LayoutList, Table,
-  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat, Folder, Copy, Image as ImageIcon
+  Tag, Clock, CheckSquare, RefreshCw, X, ChevronDown, ChevronRight, FileText, Repeat, Folder, Copy, Image as ImageIcon, Grid, List as ListIcon
 } from 'lucide-react';
 import { 
   addCustomTask, 
@@ -20,6 +20,7 @@ import {
   getRecurrenceLabel
 } from '../utils/storage';
 import DialogModal from './DialogModal';
+import CalendarView from './CalendarView';
 
 const TaskListView = ({ 
   currentList, 
@@ -28,7 +29,7 @@ const TaskListView = ({
   onRefreshData,
   onNavigateToList
 }) => {
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'table'
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'table' | 'calendar'
   const [sortOption, setSortOption] = useState('date'); // 'date' | 'title' | 'star' | 'dueDate'
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
@@ -86,13 +87,13 @@ const TaskListView = ({
     let result = [...tasks];
 
     if (safeListId === 'smart_myday') {
-      result = result.filter(t => isTaskActiveOnDate(t, new Date()));
+      result = result.filter(t => t.listId === 'smart_myday' || isTaskActiveOnDate(t, new Date()));
     } else if (safeListId === 'smart_important') {
-      result = result.filter(t => t.starred);
+      result = result.filter(t => t.listId === 'smart_important' || t.starred);
     } else if (safeListId === 'smart_planned') {
-      result = result.filter(t => Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')));
+      result = result.filter(t => t.listId === 'smart_planned' || Boolean(t.dueDate || t.dueDateLabel || (t.repeatType && t.repeatType !== 'none')));
     } else if (safeListId === 'smart_all') {
-      result = result.filter(t => !t.listId || t.listId === 'smart_all');
+      // Görevler & Notlar: Show all tasks
     } else {
       result = result.filter(t => t.listId === safeListId);
     }
@@ -152,6 +153,8 @@ const TaskListView = ({
 
     let targetListId = selectedAddListId;
     if (currentList && !safeListId.startsWith('smart_')) {
+      targetListId = safeListId;
+    } else if (safeListId.startsWith('smart_') && safeListId !== 'smart_all') {
       targetListId = safeListId;
     }
     if (!targetListId) targetListId = 'list_programlanan';
@@ -417,6 +420,17 @@ const TaskListView = ({
               <Table size={18} />
               <span>Tablo</span>
             </button>
+            {safeListId === 'smart_planned' && (
+              <button 
+                type="button"
+                className={`view-mode-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+                onClick={() => setViewMode('calendar')}
+                title="Takvim Görünümü"
+              >
+                <Grid size={18} />
+                <span>Takvim</span>
+              </button>
+            )}
           </div>
 
           {/* SORT CONTROLS */}
@@ -559,8 +573,17 @@ const TaskListView = ({
         </div>
       </form>
 
-      {/* TASKS LIST OR TABLE VIEW */}
-      {viewMode === 'list' ? (
+      {/* TASKS CONTENT AREA */}
+      {viewMode === 'calendar' ? (
+        <CalendarView 
+          tasks={filteredTasks} 
+          onAddTask={(dateStr) => {
+            setNewTaskDueDate(dateStr);
+            setViewMode('list'); // Switch to list so they can type the task name
+          }}
+          onTaskClick={(task) => handleTaskCardClick(task)}
+        />
+      ) : viewMode === 'list' ? (
         <div className="tasks-list-container">
           {activeTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="empty-tasks-state">
