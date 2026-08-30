@@ -420,17 +420,15 @@ const TaskListView = ({
               <Table size={18} />
               <span>Tablo</span>
             </button>
-            {safeListId === 'smart_planned' && (
-              <button 
-                type="button"
-                className={`view-mode-btn ${viewMode === 'calendar' ? 'active' : ''}`}
-                onClick={() => setViewMode('calendar')}
-                title="Takvim Görünümü"
-              >
-                <Grid size={18} />
-                <span>Takvim</span>
-              </button>
-            )}
+            <button 
+              type="button"
+              className={`view-mode-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+              onClick={() => setViewMode('calendar')}
+              title="Takvim Görünümü"
+            >
+              <Grid size={18} />
+              <span>Takvim</span>
+            </button>
           </div>
 
           {/* SORT CONTROLS */}
