@@ -130,6 +130,16 @@ function App() {
   };
 
   const loadApp = async () => {
+    try {
+      const room = getSyncRoom();
+      const { fetchCloudState } = await import('./utils/syncService');
+      const cloudData = await fetchCloudState(room);
+      if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.weeks)) {
+        // Always try to load the latest cloud state on startup to prevent local stale data from overwriting cloud later
+        await importData(JSON.stringify(cloudData));
+      }
+    } catch(e) {}
+
     const loadedWeeks = await getWeeks();
     setWeeks(loadedWeeks);
 
@@ -147,9 +157,7 @@ function App() {
       setCurrentWeekId(loadedWeeks[0].id);
     }
     setLoading(false);
-    setTimeout(() => {
-      broadcastCurrentState();
-    }, 500);
+    // REMOVED: Unconditional broadcast on load causes stale mobile state to overwrite fresh PC state in the cloud.
   };
 
   const refreshCustomData = async () => {
